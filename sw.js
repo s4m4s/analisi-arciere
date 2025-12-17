@@ -1,5 +1,5 @@
 // Analisi Arciere - Service Worker
-const CACHE_NAME = 'analisi-arciere-v20';
+const CACHE_NAME = 'analisi-arciere-v20.1';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
