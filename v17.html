@@ -1,0 +1,3447 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Archery Posture Analyzer</title>
+    <!-- TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
+    <!-- BodyPix -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix"></script>
+    <!-- MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/holistic"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #141416;
+            --bg-tertiary: #1c1c1f;
+            --accent-olympic: #2563eb;
+            --accent-compound: #dc2626;
+            --accent-barebow: #16a34a;
+            --accent-current: var(--accent-olympic);
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-color: #27272a;
+            --success: #22c55e;
+            --warning: #eab308;
+            --danger: #ef4444;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Header */
+        .header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .logo {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .header-logo {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+        
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--accent-current);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+        
+        .logo-icon svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+        
+        /* Bow Type Selector */
+        .bow-selector {
+            display: flex;
+            gap: 0.5rem;
+            background: var(--bg-tertiary);
+            padding: 4px;
+            border-radius: 10px;
+        }
+        
+        .bow-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .bow-btn:hover {
+            color: var(--text-primary);
+        }
+        
+        .bow-btn.active {
+            background: var(--accent-current);
+            color: white;
+        }
+        
+        .bow-btn[data-bow="olympic"].active { background: var(--accent-olympic); }
+        .bow-btn[data-bow="compound"].active { background: var(--accent-compound); }
+        .bow-btn[data-bow="barebow"].active { background: var(--accent-barebow); }
+        
+        /* Main Container */
+        .main-container {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1.5rem;
+            padding: 1.5rem;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Video Section */
+        .video-section {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+        }
+        
+        .video-container {
+            position: relative;
+            aspect-ratio: 16/9;
+            background: #000;
+        }
+        
+        #videoElement, #playbackVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        #playbackVideo {
+            display: none;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        /* Mode Indicator */
+        .mode-indicator {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        
+        .mode-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .mode-indicator.recording .mode-dot {
+            background: var(--danger);
+        }
+        
+        .mode-indicator.playback .mode-dot {
+            background: var(--accent-olympic);
+            animation: none;
+        }
+        
+        /* FPS Counter */
+        .fps-counter {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(10px);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 1px;
+        }
+        
+        /* Angles Overlay */
+        .angles-overlay {
+            position: absolute;
+            top: 4rem;
+            left: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            z-index: 10;
+        }
+        
+        .angle-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            border-left: 3px solid var(--angle-color, #fff);
+        }
+        
+        .angle-label {
+            color: var(--text-secondary);
+            min-width: 90px;
+        }
+        
+        .angle-value {
+            color: var(--angle-color, #fff);
+            font-weight: 600;
+            min-width: 40px;
+            text-align: right;
+        }
+        
+        .angle-item.good { --angle-color: var(--success); }
+        .angle-item.warning { --angle-color: var(--warning); }
+        .angle-item.bad { --angle-color: var(--danger); }
+        
+        /* Controls Bar */
+        .controls-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            border: none;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            border: 1px solid var(--border-color);
+        }
+        
+        .control-btn:hover {
+            background: var(--bg-primary);
+            transform: scale(1.05);
+        }
+        
+        .control-btn.primary {
+            width: 56px;
+            height: 56px;
+            background: var(--accent-current);
+            border: none;
+        }
+        
+        .control-btn.primary:hover {
+            filter: brightness(1.1);
+        }
+        
+        .control-btn.recording {
+            background: var(--danger);
+            animation: recording-pulse 1s infinite;
+        }
+        
+        @keyframes recording-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+        }
+        
+        .control-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        /* Playback Controls */
+        .playback-controls {
+            display: none;
+            flex-direction: column;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-tertiary);
+        }
+        
+        .playback-controls.active {
+            display: flex;
+        }
+        
+        .timeline {
+            width: 100%;
+            height: 8px;
+            background: var(--bg-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .timeline-progress {
+            height: 100%;
+            background: var(--accent-current);
+            border-radius: 4px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .timeline-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            cursor: grab;
+        }
+        
+        .playback-buttons {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+        }
+        
+        .speed-control {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: auto;
+        }
+        
+        .speed-btn {
+            padding: 0.4rem 0.8rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .speed-btn:hover, .speed-btn.active {
+            background: var(--accent-current);
+            color: white;
+            border-color: var(--accent-current);
+        }
+        
+        /* Analyze Button */
+        .analyze-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 0.5rem 1rem;
+            min-width: 60px;
+        }
+        
+        .analyze-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .analyze-text {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.65rem;
+            letter-spacing: 1px;
+        }
+        
+        .analyze-btn.analyzing {
+            background: var(--warning);
+            border-color: var(--warning);
+            color: black;
+        }
+        
+        .analyze-btn.done {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        
+        .frame-counter {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            color: var(--text-secondary);
+            min-width: 120px;
+            text-align: center;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .panel {
+            background: var(--bg-secondary);
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            overflow: hidden;
+        }
+        
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .panel-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        
+        .panel-content {
+            padding: 1rem 1.25rem;
+        }
+        
+        /* Alignment Indicators */
+        .alignment-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        
+        .alignment-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            border-left: 3px solid var(--text-muted);
+            transition: all 0.3s ease;
+        }
+        
+        .alignment-item.good {
+            border-left-color: var(--success);
+        }
+        
+        .alignment-item.warning {
+            border-left-color: var(--warning);
+        }
+        
+        .alignment-item.bad {
+            border-left-color: var(--danger);
+        }
+        
+        .alignment-name {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        
+        .alignment-value {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        
+        .alignment-item.good .alignment-value { color: var(--success); }
+        .alignment-item.warning .alignment-value { color: var(--warning); }
+        .alignment-item.bad .alignment-value { color: var(--danger); }
+        
+        /* Grid Density Selector */
+        .grid-density-select {
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .grid-density-select:focus {
+            outline: none;
+            border-color: var(--accent-current);
+        }
+        
+        /* Athlete Selector */
+        .athlete-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 0.95rem;
+        }
+        
+        .athlete-input:focus {
+            outline: none;
+            border-color: var(--accent-current);
+        }
+        
+        /* Recordings List */
+        .recordings-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .recording-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .recording-item:hover {
+            background: var(--bg-primary);
+        }
+        
+        .recording-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        
+        .recording-name {
+            font-size: 0.9rem;
+            color: var(--text-primary);
+        }
+        
+        .recording-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .recording-delete {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .recording-delete:hover {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .recording-actions {
+            display: flex;
+            gap: 0.25rem;
+        }
+        
+        .recording-download {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .recording-download:hover {
+            background: var(--accent-current);
+            color: white;
+        }
+        
+        /* Tips Panel */
+        .tips-content {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+        
+        .tip-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .tip-item:last-child {
+            border-bottom: none;
+        }
+        
+        .tip-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+            color: var(--accent-current);
+        }
+        
+        /* Camera Select */
+        .camera-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        
+        .camera-select:focus {
+            outline: none;
+            border-color: var(--accent-current);
+        }
+        
+        /* Stance Selector */
+        .stance-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .stance-btn {
+            flex: 1;
+            padding: 0.6rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .stance-btn:hover {
+            border-color: var(--accent-current);
+            color: var(--text-primary);
+        }
+        
+        .stance-btn.active {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        /* Model Selector */
+        .model-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        .model-btn {
+            padding: 0.5rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.15rem;
+        }
+        
+        .model-btn:hover {
+            border-color: var(--accent-current);
+            color: var(--text-primary);
+        }
+        
+        .model-btn.active {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .model-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+        
+        .model-desc {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        
+        .model-btn.active .model-desc {
+            opacity: 1;
+        }
+        
+        /* Loading State */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+        
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-current);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-text {
+            font-family: 'Oswald', sans-serif;
+            font-size: 1.1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+        }
+        
+        .loading-logo {
+            width: 220px;
+            height: 220px;
+            object-fit: contain;
+            margin-bottom: 2rem;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: var(--text-muted);
+        }
+        
+        .empty-state svg {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+        
+        /* Mobile Adjustments */
+        @media (max-width: 768px) {
+            .header {
+                flex-direction: column;
+                gap: 1rem;
+                padding: 1rem;
+            }
+            
+            .main-container {
+                padding: 1rem;
+                gap: 1rem;
+            }
+            
+            .controls-bar {
+                flex-wrap: wrap;
+                gap: 1rem;
+                justify-content: center;
+            }
+            
+            .video-container {
+                aspect-ratio: 4/3;
+            }
+        }
+        
+        /* Fullscreen Styles */
+        .video-section:fullscreen,
+        .video-section:-webkit-full-screen {
+            background: #000;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .video-section:fullscreen .video-container,
+        .video-section:-webkit-full-screen .video-container {
+            flex: 1;
+            width: 100% !important;
+            height: 100% !important;
+            max-height: none !important;
+            aspect-ratio: unset !important;
+        }
+        
+        .video-section:fullscreen canvas,
+        .video-section:-webkit-full-screen canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
+        }
+        
+        .video-section:fullscreen .controls-bar,
+        .video-section:-webkit-full-screen .controls-bar {
+            display: none !important;
+        }
+        
+        .video-section:fullscreen .playback-controls,
+        .video-section:-webkit-full-screen .playback-controls {
+            display: none !important;
+        }
+        
+        /* Menu Hamburger (solo in fullscreen) */
+        .hamburger-menu {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1000;
+            width: 50px;
+            height: 50px;
+            background: rgba(0,0,0,0.8);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .hamburger-menu span {
+            display: block;
+            width: 24px;
+            height: 3px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s ease;
+        }
+        
+        .hamburger-menu.open span:nth-child(1) {
+            transform: rotate(45deg) translate(6px, 6px);
+        }
+        
+        .hamburger-menu.open span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .hamburger-menu.open span:nth-child(3) {
+            transform: rotate(-45deg) translate(6px, -6px);
+        }
+        
+        .video-section:fullscreen .hamburger-menu,
+        .video-section:-webkit-full-screen .hamburger-menu {
+            display: flex;
+        }
+        
+        /* Menu a scomparsa fullscreen */
+        .fullscreen-menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: -320px;
+            width: 300px;
+            height: 100vh;
+            background: rgba(20, 20, 22, 0.95);
+            backdrop-filter: blur(20px);
+            z-index: 999;
+            padding: 80px 1.5rem 2rem;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            border-left: 1px solid var(--border-color);
+        }
+        
+        .fullscreen-menu.open {
+            right: 0;
+        }
+        
+        .video-section:fullscreen .fullscreen-menu,
+        .video-section:-webkit-full-screen .fullscreen-menu {
+            display: block;
+        }
+        
+        .fs-menu-section {
+            margin-bottom: 1.5rem;
+        }
+        
+        .fs-menu-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+        }
+        
+        .fs-menu-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .fs-menu-btn {
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            flex: 1;
+            min-width: 80px;
+            text-align: center;
+        }
+        
+        .fs-menu-btn:hover {
+            background: var(--bg-primary);
+            border-color: var(--accent-current);
+        }
+        
+        .fs-menu-btn.active {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .fs-menu-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+        }
+        
+        .fs-close-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--danger);
+            border: none;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            letter-spacing: 1px;
+            margin-top: 1rem;
+        }
+        
+        /* Overlay quando menu aperto */
+        .menu-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+        
+        .menu-overlay.open {
+            display: block;
+        }
+        
+        .video-section:fullscreen .menu-overlay,
+        .video-section:-webkit-full-screen .menu-overlay {
+            display: none;
+        }
+        
+        .video-section:fullscreen .menu-overlay.open,
+        .video-section:-webkit-full-screen .menu-overlay.open {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <img src="logo-pol.png" alt="Logo" class="loading-logo">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Caricamento modello AI...</div>
+    </div>
+    
+    <!-- Header -->
+    <header class="header">
+        <div class="logo">
+            <img src="logo-pol.png" alt="Logo" class="header-logo">
+            Analisi Arciere
+        </div>
+        
+        <div class="bow-selector">
+            <button class="bow-btn active" data-bow="olympic">Olimpico</button>
+            <button class="bow-btn" data-bow="compound">Compound</button>
+            <button class="bow-btn" data-bow="barebow">Nudo</button>
+        </div>
+    </header>
+    
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Video Section -->
+        <section class="video-section">
+            <div class="video-container">
+                <video id="videoElement" autoplay playsinline muted></video>
+                <video id="playbackVideo" playsinline></video>
+                <canvas id="canvas"></canvas>
+                
+                <!-- Hamburger Menu Button -->
+                <button class="hamburger-menu" id="hamburgerBtn">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                
+                <!-- Menu Overlay -->
+                <div class="menu-overlay" id="menuOverlay"></div>
+                
+                <!-- Fullscreen Menu -->
+                <div class="fullscreen-menu" id="fullscreenMenu">
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Tipo Arco</div>
+                        <div class="fs-menu-buttons">
+                            <button class="fs-menu-btn fs-bow-btn active" data-bow="olympic">Olimpico</button>
+                            <button class="fs-menu-btn fs-bow-btn" data-bow="compound">Compound</button>
+                            <button class="fs-menu-btn fs-bow-btn" data-bow="barebow">Nudo</button>
+                        </div>
+                    </div>
+                    
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Posizione Arciere</div>
+                        <div class="fs-menu-buttons">
+                            <button class="fs-menu-btn fs-stance-btn active" data-stance="left">← Sinistra</button>
+                            <button class="fs-menu-btn fs-stance-btn" data-stance="right">Destra →</button>
+                        </div>
+                    </div>
+                    
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Modello AI</div>
+                        <div class="fs-menu-grid">
+                            <button class="fs-menu-btn fs-model-btn active" data-model="thunder">Thunder</button>
+                            <button class="fs-menu-btn fs-model-btn" data-model="lightning">Lightning</button>
+                            <button class="fs-menu-btn fs-model-btn" data-model="holistic">Holistic</button>
+                            <button class="fs-menu-btn fs-model-btn" data-model="bodypix">BodyPix</button>
+                        </div>
+                    </div>
+                    
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Visualizzazione</div>
+                        <div class="fs-menu-grid">
+                            <button class="fs-menu-btn fs-toggle-btn active" id="fsSkeletonBtn">Scheletro</button>
+                            <button class="fs-menu-btn fs-toggle-btn" id="fsGridBtn">Griglia</button>
+                            <button class="fs-menu-btn fs-toggle-btn active" id="fsAlignBtn">Allineamenti</button>
+                            <button class="fs-menu-btn fs-toggle-btn" id="fsFlipBtn">Specchia</button>
+                        </div>
+                    </div>
+                    
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Griglia</div>
+                        <div class="fs-menu-buttons">
+                            <button class="fs-menu-btn fs-grid-density" data-density="8">8×8</button>
+                            <button class="fs-menu-btn fs-grid-density active" data-density="16">16×16</button>
+                            <button class="fs-menu-btn fs-grid-density" data-density="32">32×32</button>
+                        </div>
+                    </div>
+                    
+                    <div class="fs-menu-section">
+                        <div class="fs-menu-title">Azioni</div>
+                        <div class="fs-menu-grid">
+                            <button class="fs-menu-btn" id="fsRecordBtn">🔴 Registra</button>
+                            <button class="fs-menu-btn" id="fsScreenshotBtn">📷 Screenshot</button>
+                        </div>
+                    </div>
+                    
+                    <button class="fs-close-btn" id="fsExitBtn">Esci da Schermo Intero</button>
+                </div>
+                
+                <div class="mode-indicator" id="modeIndicator">
+                    <div class="mode-dot"></div>
+                    <span id="modeText">Live</span>
+                </div>
+                
+                <!-- Overlay Angoli -->
+                <div class="angles-overlay" id="anglesOverlay">
+                    <div class="angle-item" id="angleShoulders" data-color="#ff6b6b">
+                        <span class="angle-label">Spalle</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                    <div class="angle-item" id="angleHips" data-color="#4ecdc4">
+                        <span class="angle-label">Fianchi</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                    <div class="angle-item" id="angleBowArm" data-color="#ffe66d">
+                        <span class="angle-label">Braccio Arco</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                    <div class="angle-item" id="angleDrawArm" data-color="#95e1d3">
+                        <span class="angle-label">Braccio Trazione</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                    <div class="angle-item" id="angleTorso" data-color="#dda0dd">
+                        <span class="angle-label">Busto</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                    <div class="angle-item" id="angleHead" data-color="#87ceeb">
+                        <span class="angle-label">Testa</span>
+                        <span class="angle-value">--°</span>
+                    </div>
+                </div>
+                
+                <div class="fps-counter" id="fpsCounter">-- FPS</div>
+            </div>
+            
+            <!-- Live Controls -->
+            <div class="controls-bar" id="liveControls">
+                <div class="control-group">
+                    <button class="control-btn" id="flipBtn" title="Specchia video">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 00-2 2v14c0 1.1.9 2 2 2h3M16 3h3a2 2 0 012 2v14a2 2 0 01-2 2h-3M12 3v18"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn" id="skeletonBtn" title="Mostra/nascondi scheletro">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="5" r="3"/>
+                            <line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="12" y1="12" x2="8" y2="9"/>
+                            <line x1="12" y1="12" x2="16" y2="9"/>
+                            <line x1="12" y1="16" x2="8" y2="21"/>
+                            <line x1="12" y1="16" x2="16" y2="21"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn" id="gridBtn" title="Mostra/nascondi griglia">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18"/>
+                            <line x1="3" y1="9" x2="21" y2="9"/>
+                            <line x1="3" y1="15" x2="21" y2="15"/>
+                            <line x1="9" y1="3" x2="9" y2="21"/>
+                            <line x1="15" y1="3" x2="15" y2="21"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn active" id="alignmentsBtn" title="Mostra/nascondi allineamenti">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 20V10"/>
+                            <path d="M18 20V4"/>
+                            <path d="M6 20v-4"/>
+                        </svg>
+                    </button>
+                    <select class="grid-density-select" id="gridDensitySelect" title="Densità griglia">
+                        <option value="8">8×8</option>
+                        <option value="16" selected>16×16</option>
+                        <option value="24">24×24</option>
+                        <option value="32">32×32</option>
+                        <option value="48">48×48</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <button class="control-btn primary" id="recordBtn" title="Registra">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <circle cx="12" cy="12" r="8"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <div class="control-group">
+                    <button class="control-btn" id="screenshotBtn" title="Screenshot">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </button>
+                    <button class="control-btn" id="fullscreenBtn" title="Schermo intero">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Playback Controls -->
+            <div class="playback-controls" id="playbackControls">
+                <div class="timeline" id="timeline">
+                    <div class="timeline-progress" id="timelineProgress"></div>
+                    <div class="timeline-handle" id="timelineHandle" style="left: 0%"></div>
+                </div>
+                
+                <div class="playback-buttons">
+                    <button class="control-btn" id="backToLiveBtn" title="Torna al live">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="3" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-btn" id="framePrevBtn" title="Frame precedente">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="5" x2="19" y2="19"/>
+                            <polygon points="14,19 5,12 14,5" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-btn primary" id="playPauseBtn" title="Play/Pausa">
+                        <svg viewBox="0 0 24 24" fill="currentColor" id="playIcon">
+                            <polygon points="8,5 19,12 8,19"/>
+                        </svg>
+                    </button>
+                    
+                    <button class="control-btn" id="frameNextBtn" title="Frame successivo">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="5" y1="5" x2="5" y2="19"/>
+                            <polygon points="10,5 19,12 10,19" fill="currentColor"/>
+                        </svg>
+                    </button>
+                    
+                    <div class="frame-counter" id="frameCounter">0 / 0</div>
+                    
+                    <button class="control-btn analyze-btn" id="analyzeBtn" title="Analisi HD">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                        <span class="analyze-text">HD</span>
+                    </button>
+                    
+                    <div class="speed-control">
+                        <button class="speed-btn" data-speed="0.1">0.1x</button>
+                        <button class="speed-btn" data-speed="0.25">0.25x</button>
+                        <button class="speed-btn active" data-speed="0.5">0.5x</button>
+                        <button class="speed-btn" data-speed="1">1x</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <!-- Camera & Settings -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Impostazioni</span>
+                </div>
+                <div class="panel-content">
+                    <select class="camera-select" id="cameraSelect">
+                        <option value="">Seleziona fotocamera...</option>
+                    </select>
+                    
+                    <div style="margin-top: 1rem;">
+                        <label class="panel-title" style="display: block; margin-bottom: 0.5rem;">Posizione Arciere</label>
+                        <div class="stance-selector">
+                            <button class="stance-btn active" data-stance="left">← Sinistra</button>
+                            <button class="stance-btn" data-stance="right">Destra →</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <label class="panel-title" style="display: block; margin-bottom: 0.5rem;">Nome Atleta</label>
+                        <input type="text" class="athlete-input" id="athleteName" placeholder="Nome atleta...">
+                    </div>
+                    
+                    <div style="margin-top: 1rem;">
+                        <label class="panel-title" style="display: block; margin-bottom: 0.5rem;">Modello AI</label>
+                        <div class="model-selector">
+                            <button class="model-btn active" data-model="thunder">
+                                <span class="model-name">Thunder</span>
+                                <span class="model-desc">Preciso</span>
+                            </button>
+                            <button class="model-btn" data-model="lightning">
+                                <span class="model-name">Lightning</span>
+                                <span class="model-desc">Veloce</span>
+                            </button>
+                            <button class="model-btn" data-model="holistic">
+                                <span class="model-name">Holistic</span>
+                                <span class="model-desc">Mani+Volto</span>
+                            </button>
+                            <button class="model-btn" data-model="bodypix">
+                                <span class="model-name">BodyPix</span>
+                                <span class="model-desc">Segmenta</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recordings -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span class="panel-title">Registrazioni</span>
+                </div>
+                <div class="panel-content">
+                    <div class="recordings-list" id="recordingsList">
+                        <div class="empty-state">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M3 6a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>
+                            </svg>
+                            <p>Nessuna registrazione</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        // App State
+        const state = {
+            bowType: 'olympic',
+            stance: 'left', // archer facing left or right
+            modelType: 'thunder', // 'thunder', 'lightning', o 'mediapipe'
+            useBlazePose: false, // true se stiamo usando MediaPipe/BlazePose
+            isRecording: false,
+            isPlayback: false,
+            isPlaying: false,
+            isAnalyzing: false,
+            showSkeleton: true,
+            showGrid: false,
+            showAlignments: true,
+            gridDensity: 16, // 8, 16, 24, 32
+            flipVideo: false,
+            detector: null,
+            holisticDetector: null, // MediaPipe Holistic
+            holisticCamera: null, // Camera per Holistic
+            bodyPixNet: null, // BodyPix
+            blazeDetector: null, // per analisi avanzata
+            currentPose: null,
+            currentHolisticResults: null, // risultati Holistic
+            currentSegmentation: null, // risultati BodyPix
+            analyzedFrames: {}, // cache frame analizzati
+            recordings: [],
+            currentRecording: null,
+            currentFrame: 0,
+            playbackSpeed: 0.5,
+            fps: 0,
+            frameCount: 0,
+            lastFpsTime: Date.now()
+        };
+
+        // DOM Elements
+        const elements = {
+            video: document.getElementById('videoElement'),
+            playbackVideo: document.getElementById('playbackVideo'),
+            canvas: document.getElementById('canvas'),
+            loadingOverlay: document.getElementById('loadingOverlay'),
+            modeIndicator: document.getElementById('modeIndicator'),
+            modeText: document.getElementById('modeText'),
+            fpsCounter: document.getElementById('fpsCounter'),
+            liveControls: document.getElementById('liveControls'),
+            playbackControls: document.getElementById('playbackControls'),
+            recordBtn: document.getElementById('recordBtn'),
+            flipBtn: document.getElementById('flipBtn'),
+            skeletonBtn: document.getElementById('skeletonBtn'),
+            gridBtn: document.getElementById('gridBtn'),
+            screenshotBtn: document.getElementById('screenshotBtn'),
+            fullscreenBtn: document.getElementById('fullscreenBtn'),
+            cameraSelect: document.getElementById('cameraSelect'),
+            athleteName: document.getElementById('athleteName'),
+            alignmentList: document.getElementById('alignmentList'),
+            recordingsList: document.getElementById('recordingsList'),
+            timeline: document.getElementById('timeline'),
+            timelineProgress: document.getElementById('timelineProgress'),
+            timelineHandle: document.getElementById('timelineHandle'),
+            frameCounter: document.getElementById('frameCounter'),
+            playPauseBtn: document.getElementById('playPauseBtn'),
+            framePrevBtn: document.getElementById('framePrevBtn'),
+            frameNextBtn: document.getElementById('frameNextBtn'),
+            backToLiveBtn: document.getElementById('backToLiveBtn')
+        };
+
+        const ctx = elements.canvas.getContext('2d');
+
+        // Bow type configurations
+        const bowConfig = {
+            olympic: {
+                color: '#2563eb',
+                tips: [
+                    { icon: 'target', text: 'Mantieni le spalle allineate con il bersaglio' },
+                    { icon: 'arrow', text: 'Il braccio dell\'arco deve essere completamente esteso' },
+                    { icon: 'anchor', text: 'Ancora sotto il mento, corda sul naso' },
+                    { icon: 'posture', text: 'Busto eretto, leggera inclinazione in avanti' }
+                ],
+                thresholds: {
+                    shoulders: { good: 5, warning: 10 },
+                    hips: { good: 5, warning: 10 },
+                    bowArm: { target: 180, good: 5, warning: 10 },
+                    torso: { good: 3, warning: 7 }
+                }
+            },
+            compound: {
+                color: '#dc2626',
+                tips: [
+                    { icon: 'target', text: 'Spalle parallele, stance leggermente aperto' },
+                    { icon: 'arrow', text: 'Gomito del braccio arco leggermente piegato' },
+                    { icon: 'anchor', text: 'Ancora al lato del viso, usa il peep sight' },
+                    { icon: 'posture', text: 'Postura più rilassata rispetto all\'olimpico' }
+                ],
+                thresholds: {
+                    shoulders: { good: 7, warning: 12 },
+                    hips: { good: 7, warning: 12 },
+                    bowArm: { target: 170, good: 10, warning: 15 },
+                    torso: { good: 5, warning: 10 }
+                }
+            },
+            barebow: {
+                color: '#16a34a',
+                tips: [
+                    { icon: 'target', text: 'Allineamento simile all\'olimpico' },
+                    { icon: 'arrow', text: 'Stringwalk o facewalking per la mira' },
+                    { icon: 'anchor', text: 'Ancora costante, spesso più alta' },
+                    { icon: 'posture', text: 'Postura stabile, piedi ben piantati' }
+                ],
+                thresholds: {
+                    shoulders: { good: 5, warning: 10 },
+                    hips: { good: 5, warning: 10 },
+                    bowArm: { target: 180, good: 5, warning: 10 },
+                    torso: { good: 3, warning: 7 }
+                }
+            }
+        };
+
+        // Smoothing system
+        const smoothingBuffer = {};
+        const SMOOTHING_FRAMES = 8; // numero di frame per la media mobile (aumentato per Thunder)
+        
+        function smoothKeypoints(keypoints) {
+            return keypoints.map((kp, index) => {
+                if (!smoothingBuffer[index]) {
+                    smoothingBuffer[index] = [];
+                }
+                
+                smoothingBuffer[index].push({ x: kp.x, y: kp.y, score: kp.score });
+                
+                // Mantieni solo gli ultimi N frame
+                if (smoothingBuffer[index].length > SMOOTHING_FRAMES) {
+                    smoothingBuffer[index].shift();
+                }
+                
+                // Calcola la media
+                const buffer = smoothingBuffer[index];
+                const avgX = buffer.reduce((sum, p) => sum + p.x, 0) / buffer.length;
+                const avgY = buffer.reduce((sum, p) => sum + p.y, 0) / buffer.length;
+                const avgScore = buffer.reduce((sum, p) => sum + p.score, 0) / buffer.length;
+                
+                return {
+                    ...kp,
+                    x: avgX,
+                    y: avgY,
+                    score: avgScore
+                };
+            });
+        }
+        
+        // Keypoint indices for MoveNet
+        const KEYPOINTS = {
+            nose: 0,
+            leftEye: 1,
+            rightEye: 2,
+            leftEar: 3,
+            rightEar: 4,
+            leftShoulder: 5,
+            rightShoulder: 6,
+            leftElbow: 7,
+            rightElbow: 8,
+            leftWrist: 9,
+            rightWrist: 10,
+            leftHip: 11,
+            rightHip: 12,
+            leftKnee: 13,
+            rightKnee: 14,
+            leftAnkle: 15,
+            rightAnkle: 16
+        };
+
+        // Skeleton connections
+        const SKELETON_CONNECTIONS = [
+            [KEYPOINTS.leftShoulder, KEYPOINTS.rightShoulder],
+            [KEYPOINTS.leftShoulder, KEYPOINTS.leftElbow],
+            [KEYPOINTS.leftElbow, KEYPOINTS.leftWrist],
+            [KEYPOINTS.rightShoulder, KEYPOINTS.rightElbow],
+            [KEYPOINTS.rightElbow, KEYPOINTS.rightWrist],
+            [KEYPOINTS.leftShoulder, KEYPOINTS.leftHip],
+            [KEYPOINTS.rightShoulder, KEYPOINTS.rightHip],
+            [KEYPOINTS.leftHip, KEYPOINTS.rightHip],
+            [KEYPOINTS.leftHip, KEYPOINTS.leftKnee],
+            [KEYPOINTS.leftKnee, KEYPOINTS.leftAnkle],
+            [KEYPOINTS.rightHip, KEYPOINTS.rightKnee],
+            [KEYPOINTS.rightKnee, KEYPOINTS.rightAnkle],
+            [KEYPOINTS.nose, KEYPOINTS.leftEye],
+            [KEYPOINTS.nose, KEYPOINTS.rightEye],
+            [KEYPOINTS.leftEye, KEYPOINTS.leftEar],
+            [KEYPOINTS.rightEye, KEYPOINTS.rightEar]
+        ];
+
+        // Initialize app
+        async function loadModel(modelType) {
+            // Dispose modelli precedenti
+            if (state.detector) {
+                try { state.detector.dispose(); } catch(e) {}
+                state.detector = null;
+            }
+            if (state.holisticDetector) {
+                try { state.holisticDetector.close(); } catch(e) {}
+                state.holisticDetector = null;
+            }
+            if (state.holisticCamera) {
+                try { state.holisticCamera.stop(); } catch(e) {}
+                state.holisticCamera = null;
+            }
+            state.bodyPixNet = null;
+            
+            state.useBlazePose = false;
+            state.modelType = modelType;
+            
+            if (modelType === 'holistic') {
+                // MediaPipe Holistic
+                try {
+                    const holistic = new Holistic({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${file}`
+                    });
+                    
+                    holistic.setOptions({
+                        modelComplexity: 1,
+                        smoothLandmarks: true,
+                        enableSegmentation: false,
+                        smoothSegmentation: false,
+                        refineFaceLandmarks: false,
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    
+                    holistic.onResults((results) => {
+                        state.currentHolisticResults = results;
+                    });
+                    
+                    state.holisticDetector = holistic;
+                    console.log('MediaPipe Holistic configurato');
+                } catch (e) {
+                    console.error('Errore Holistic:', e);
+                    state.detector = await poseDetection.createDetector(
+                        poseDetection.SupportedModels.MoveNet,
+                        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER, enableSmoothing: true }
+                    );
+                    state.modelType = 'thunder';
+                    alert('Holistic non disponibile, uso Thunder');
+                }
+            } else if (modelType === 'bodypix') {
+                // BodyPix
+                try {
+                    state.bodyPixNet = await bodyPix.load({
+                        architecture: 'MobileNetV1',
+                        outputStride: 16,
+                        multiplier: 0.75,
+                        quantBytes: 2
+                    });
+                    console.log('BodyPix caricato');
+                } catch (e) {
+                    console.error('Errore BodyPix:', e);
+                    state.detector = await poseDetection.createDetector(
+                        poseDetection.SupportedModels.MoveNet,
+                        { modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER, enableSmoothing: true }
+                    );
+                    state.modelType = 'thunder';
+                    alert('BodyPix non disponibile, uso Thunder');
+                }
+            } else {
+                // MoveNet (Thunder o Lightning)
+                const modelConfig = modelType === 'thunder' 
+                    ? poseDetection.movenet.modelType.SINGLEPOSE_THUNDER
+                    : poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING;
+                    
+                state.detector = await poseDetection.createDetector(
+                    poseDetection.SupportedModels.MoveNet,
+                    { modelType: modelConfig, enableSmoothing: true }
+                );
+            }
+            
+            // Resetta il buffer di smoothing
+            Object.keys(smoothingBuffer).forEach(key => delete smoothingBuffer[key]);
+        }
+        
+        async function init() {
+            try {
+                // Load MoveNet model
+                await loadModel(state.modelType);
+                
+                // Get cameras
+                await populateCameras();
+                
+                // Setup event listeners
+                setupEventListeners();
+                
+                // Hide loading
+                elements.loadingOverlay.classList.add('hidden');
+                
+                // Start with default camera
+                if (elements.cameraSelect.options.length > 1) {
+                    elements.cameraSelect.selectedIndex = 1;
+                    await startCamera(elements.cameraSelect.value);
+                }
+            } catch (error) {
+                console.error('Initialization error:', error);
+                elements.loadingOverlay.querySelector('.loading-text').textContent = 
+                    'Errore di caricamento. Ricarica la pagina.';
+            }
+        }
+
+        async function populateCameras() {
+            // Prima richiedi i permessi, altrimenti il browser non mostra tutte le fotocamere
+            try {
+                const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                // Chiudi subito lo stream temporaneo
+                tempStream.getTracks().forEach(track => track.stop());
+            } catch (e) {
+                console.log('Permesso fotocamera non concesso');
+            }
+            
+            // Ora enumera tutte le fotocamere
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            const videoDevices = devices.filter(d => d.kind === 'videoinput');
+            
+            elements.cameraSelect.innerHTML = '<option value="">Seleziona fotocamera...</option>';
+            videoDevices.forEach((device, index) => {
+                const option = document.createElement('option');
+                option.value = device.deviceId;
+                option.textContent = device.label || `Camera ${index + 1}`;
+                elements.cameraSelect.appendChild(option);
+            });
+            
+            console.log(`Trovate ${videoDevices.length} fotocamere`);
+        }
+
+        async function startCamera(deviceId) {
+            try {
+                // Ferma lo stream precedente se esiste
+                if (elements.video.srcObject) {
+                    const tracks = elements.video.srcObject.getTracks();
+                    tracks.forEach(track => track.stop());
+                    elements.video.srcObject = null;
+                }
+                
+                // Resetta il buffer di smoothing quando si cambia camera
+                Object.keys(smoothingBuffer).forEach(key => delete smoothingBuffer[key]);
+                
+                const constraints = {
+                    video: {
+                        deviceId: deviceId ? { exact: deviceId } : undefined,
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        frameRate: { ideal: 60, min: 30 }
+                    }
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                elements.video.srcObject = stream;
+                
+                elements.video.onloadedmetadata = () => {
+                    updateCanvasSize();
+                    if (!state.isPlayback) {
+                        detectPose();
+                    }
+                };
+            } catch (error) {
+                console.error('Camera error:', error);
+                alert('Impossibile accedere alla fotocamera. Verifica i permessi.');
+            }
+        }
+        
+        // Funzione per aggiornare dimensioni canvas
+        function updateCanvasSize() {
+            if (elements.video.videoWidth && elements.video.videoHeight) {
+                elements.canvas.width = elements.video.videoWidth;
+                elements.canvas.height = elements.video.videoHeight;
+            }
+        }
+        
+        // Handler per resize/orientamento
+        window.addEventListener('resize', () => {
+            updateCanvasSize();
+        });
+        
+        // Handler per cambio orientamento
+        window.addEventListener('orientationchange', () => {
+            setTimeout(() => {
+                updateCanvasSize();
+            }, 100);
+        });
+        
+        // Handler per fullscreen change
+        document.addEventListener('fullscreenchange', () => {
+            setTimeout(() => {
+                updateCanvasSize();
+            }, 100);
+        });
+
+        async function detectPose() {
+            if (state.isPlayback) return;
+            
+            if (elements.video.readyState >= 2) {
+                try {
+                    if (state.modelType === 'holistic' && state.holisticDetector) {
+                        // MediaPipe Holistic - invia frame
+                        await state.holisticDetector.send({ image: elements.video });
+                        
+                        // Aspetta un po' per i risultati
+                        await new Promise(r => setTimeout(r, 10));
+                        
+                        if (state.currentHolisticResults) {
+                            drawFrameHolistic(elements.video, state.currentHolisticResults);
+                        } else {
+                            // Disegna solo il video se non ci sono risultati
+                            drawFrame(elements.video, null);
+                        }
+                        
+                    } else if (state.modelType === 'bodypix' && state.bodyPixNet) {
+                        // BodyPix segmentation
+                        const segmentation = await state.bodyPixNet.segmentPerson(elements.video, {
+                            flipHorizontal: false,
+                            internalResolution: 'medium',
+                            segmentationThreshold: 0.7
+                        });
+                        state.currentSegmentation = segmentation;
+                        drawFrameBodyPix(elements.video, segmentation);
+                        
+                    } else if (state.detector) {
+                        // MoveNet (Thunder/Lightning)
+                        const poses = await state.detector.estimatePoses(elements.video);
+                        
+                        if (poses.length > 0) {
+                            let pose = poses[0];
+                            pose.keypoints = smoothKeypoints(pose.keypoints);
+                            state.currentPose = pose;
+                            updateAlignments(pose);
+                            drawFrame(elements.video, pose);
+                        } else {
+                            drawFrame(elements.video, null);
+                        }
+                    }
+                } catch (e) {
+                    console.error('Errore detection:', e);
+                    drawFrame(elements.video, null);
+                }
+                
+                updateFps();
+            }
+            
+            requestAnimationFrame(detectPose);
+        }
+        
+        // Disegna frame con MediaPipe Holistic
+        function drawFrameHolistic(source, results) {
+            const { width, height } = elements.canvas;
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(source, 0, 0, width, height);
+            ctx.restore();
+            
+            // Disegna griglia se attiva
+            if (state.showGrid) {
+                drawGrid(width, height);
+            }
+            
+            if (!results || !state.showSkeleton) return;
+            
+            // Colori per segmento (corrispondono agli allineamenti)
+            const segmentColors = {
+                shoulders: '#ff6b6b',    // rosso
+                hips: '#4ecdc4',         // turchese  
+                bowArm: '#ffe66d',       // giallo
+                drawArm: '#95e1d3',      // verde acqua
+                torso: '#dda0dd',        // viola
+                head: '#87ceeb',         // azzurro
+                neck: '#ff9f43',         // arancione
+                hands: '#ffcc00',        // giallo oro
+                legs: '#ffffff'          // bianco
+            };
+            
+            const bowSide = state.stance === 'left' ? 'left' : 'right';
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 4;
+            ctx.lineCap = 'round';
+            
+            // Disegna pose (corpo) con colori per segmento
+            if (results.poseLandmarks) {
+                const lm = results.poseLandmarks;
+                
+                // Helper per disegnare linea
+                const drawLine = (idx1, idx2, color, lineWidth = 6) => {
+                    if (lm[idx1] && lm[idx2]) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = lineWidth;
+                        ctx.moveTo(lm[idx1].x * width, lm[idx1].y * height);
+                        ctx.lineTo(lm[idx2].x * width, lm[idx2].y * height);
+                        ctx.stroke();
+                    }
+                };
+                
+                // Helper per disegnare punto
+                const drawPoint = (idx, color, radius = 8) => {
+                    if (lm[idx]) {
+                        ctx.beginPath();
+                        ctx.arc(lm[idx].x * width, lm[idx].y * height, radius, 0, 2 * Math.PI);
+                        ctx.fillStyle = color;
+                        ctx.fill();
+                        ctx.strokeStyle = 'white';
+                        ctx.lineWidth = 2;
+                        ctx.shadowBlur = 0;
+                        ctx.stroke();
+                        ctx.shadowBlur = 4;
+                    }
+                };
+                
+                // SPALLE (rosso)
+                drawLine(11, 12, segmentColors.shoulders, 8);
+                drawPoint(11, segmentColors.shoulders, 10);
+                drawPoint(12, segmentColors.shoulders, 10);
+                
+                // FIANCHI (turchese)
+                drawLine(23, 24, segmentColors.hips, 8);
+                drawPoint(23, segmentColors.hips, 10);
+                drawPoint(24, segmentColors.hips, 10);
+                
+                // BUSTO (viola)
+                drawLine(11, 23, segmentColors.torso, 6);
+                drawLine(12, 24, segmentColors.torso, 6);
+                
+                // BRACCIO ARCO (giallo) - sinistro o destro in base a stance
+                if (bowSide === 'left') {
+                    drawLine(11, 13, segmentColors.bowArm, 6);
+                    drawLine(13, 15, segmentColors.bowArm, 6);
+                    drawPoint(13, segmentColors.bowArm);
+                    drawPoint(15, segmentColors.bowArm);
+                    // BRACCIO TRAZIONE (verde acqua)
+                    drawLine(12, 14, segmentColors.drawArm, 6);
+                    drawLine(14, 16, segmentColors.drawArm, 6);
+                    drawPoint(14, segmentColors.drawArm);
+                    drawPoint(16, segmentColors.drawArm);
+                } else {
+                    drawLine(12, 14, segmentColors.bowArm, 6);
+                    drawLine(14, 16, segmentColors.bowArm, 6);
+                    drawPoint(14, segmentColors.bowArm);
+                    drawPoint(16, segmentColors.bowArm);
+                    // BRACCIO TRAZIONE (verde acqua)
+                    drawLine(11, 13, segmentColors.drawArm, 6);
+                    drawLine(13, 15, segmentColors.drawArm, 6);
+                    drawPoint(13, segmentColors.drawArm);
+                    drawPoint(15, segmentColors.drawArm);
+                }
+                
+                // COLLO (arancione)
+                if (lm[11] && lm[12] && lm[0]) {
+                    const midX = (lm[11].x + lm[12].x) / 2 * width;
+                    const midY = (lm[11].y + lm[12].y) / 2 * height;
+                    ctx.beginPath();
+                    ctx.strokeStyle = segmentColors.neck;
+                    ctx.lineWidth = 5;
+                    ctx.moveTo(midX, midY);
+                    ctx.lineTo(lm[0].x * width, lm[0].y * height);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.arc(midX, midY, 6, 0, 2 * Math.PI);
+                    ctx.fillStyle = segmentColors.neck;
+                    ctx.fill();
+                }
+                
+                // TESTA (azzurro)
+                drawPoint(0, segmentColors.head, 8); // naso
+                
+                // GAMBE (bianco)
+                drawLine(23, 25, segmentColors.legs, 5);
+                drawLine(25, 27, segmentColors.legs, 5);
+                drawLine(24, 26, segmentColors.legs, 5);
+                drawLine(26, 28, segmentColors.legs, 5);
+                drawPoint(25, segmentColors.legs, 6);
+                drawPoint(27, segmentColors.legs, 6);
+                drawPoint(26, segmentColors.legs, 6);
+                drawPoint(28, segmentColors.legs, 6);
+            }
+            
+            // Disegna mani (giallo oro)
+            if (results.leftHandLandmarks) {
+                drawHolisticConnectors(results.leftHandLandmarks, HAND_CONNECTIONS, segmentColors.hands, 3, width, height);
+                drawHolisticLandmarks(results.leftHandLandmarks, segmentColors.hands, 4, width, height);
+            }
+            
+            if (results.rightHandLandmarks) {
+                drawHolisticConnectors(results.rightHandLandmarks, HAND_CONNECTIONS, segmentColors.hands, 3, width, height);
+                drawHolisticLandmarks(results.rightHandLandmarks, segmentColors.hands, 4, width, height);
+            }
+            
+            // Disegna perimetro testa (azzurro)
+            if (results.faceLandmarks && results.faceLandmarks.length > 0) {
+                // Perimetro del viso (contorno ovale)
+                const faceContour = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10];
+                
+                ctx.beginPath();
+                ctx.strokeStyle = '#87ceeb'; // azzurro come testa
+                ctx.lineWidth = 2;
+                
+                faceContour.forEach((idx, i) => {
+                    if (results.faceLandmarks[idx]) {
+                        const lm = results.faceLandmarks[idx];
+                        if (i === 0) {
+                            ctx.moveTo(lm.x * width, lm.y * height);
+                        } else {
+                            ctx.lineTo(lm.x * width, lm.y * height);
+                        }
+                    }
+                });
+                ctx.closePath();
+                ctx.stroke();
+            }
+            
+            ctx.restore();
+            
+            // Converti per allineamenti
+            if (results.poseLandmarks) {
+                const pose = convertHolisticToMoveNet(results.poseLandmarks, width, height);
+                if (pose) {
+                    state.currentPose = pose;
+                    updateAlignments(pose);
+                }
+            }
+        }
+        
+        // Disegna frame con BodyPix
+        function drawFrameBodyPix(source, segmentation) {
+            const { width, height } = elements.canvas;
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(source, 0, 0, width, height);
+            ctx.restore();
+            
+            // Disegna griglia se attiva
+            if (state.showGrid) {
+                drawGrid(width, height);
+            }
+            
+            if (!segmentation || !state.showSkeleton) return;
+            
+            const config = bowConfig[state.bowType];
+            
+            // Disegna maschera di segmentazione
+            const maskCanvas = document.createElement('canvas');
+            maskCanvas.width = width;
+            maskCanvas.height = height;
+            const maskCtx = maskCanvas.getContext('2d');
+            
+            const imageData = maskCtx.createImageData(width, height);
+            const data = segmentation.data;
+            
+            for (let i = 0; i < data.length; i++) {
+                const j = i * 4;
+                if (data[i]) {
+                    // Persona rilevata - colora con il colore dell'arco
+                    const rgb = hexToRgb(config.color);
+                    imageData.data[j] = rgb.r;
+                    imageData.data[j + 1] = rgb.g;
+                    imageData.data[j + 2] = rgb.b;
+                    imageData.data[j + 3] = 100; // semi-trasparente
+                } else {
+                    imageData.data[j + 3] = 0; // trasparente
+                }
+            }
+            
+            maskCtx.putImageData(imageData, 0, 0);
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            ctx.drawImage(maskCanvas, 0, 0);
+            ctx.restore();
+            
+            // BodyPix può anche rilevare pose
+            if (segmentation.allPoses && segmentation.allPoses.length > 0) {
+                const pose = segmentation.allPoses[0];
+                state.currentPose = { keypoints: pose.keypoints };
+                updateAlignments({ keypoints: pose.keypoints });
+                
+                // Disegna scheletro
+                ctx.save();
+                if (state.flipVideo) {
+                    ctx.translate(width, 0);
+                    ctx.scale(-1, 1);
+                }
+                drawSkeleton({ keypoints: pose.keypoints }, width, height);
+                ctx.restore();
+            }
+        }
+        
+        // Helper per disegnare connettori Holistic
+        function drawHolisticConnectors(landmarks, connections, color, lineWidth, width, height) {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = lineWidth;
+            ctx.lineCap = 'round';
+            
+            connections.forEach(([i, j]) => {
+                const lm1 = landmarks[i];
+                const lm2 = landmarks[j];
+                if (lm1 && lm2) {
+                    ctx.beginPath();
+                    ctx.moveTo(lm1.x * width, lm1.y * height);
+                    ctx.lineTo(lm2.x * width, lm2.y * height);
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        // Helper per disegnare landmarks Holistic
+        function drawHolisticLandmarks(landmarks, color, radius, width, height) {
+            ctx.fillStyle = color;
+            landmarks.forEach(lm => {
+                if (lm && lm.visibility > 0.5) {
+                    ctx.beginPath();
+                    ctx.arc(lm.x * width, lm.y * height, radius, 0, 2 * Math.PI);
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+            });
+        }
+        
+        // Converti Holistic pose in formato MoveNet
+        function convertHolisticToMoveNet(poseLandmarks, width, height) {
+            if (!poseLandmarks || poseLandmarks.length < 33) return null;
+            
+            // Mapping Holistic -> MoveNet
+            const mapping = [0, 2, 5, 7, 8, 11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28];
+            
+            const keypoints = mapping.map((holisticIdx, moveNetIdx) => {
+                const lm = poseLandmarks[holisticIdx];
+                return {
+                    x: lm.x * width,
+                    y: lm.y * height,
+                    score: lm.visibility || 0.5,
+                    name: Object.keys(KEYPOINTS)[moveNetIdx]
+                };
+            });
+            
+            return { keypoints };
+        }
+        
+        // Connessioni per Holistic
+        const POSE_CONNECTIONS = [
+            [11, 12], [11, 13], [13, 15], [12, 14], [14, 16], // braccia
+            [11, 23], [12, 24], [23, 24], // torso
+            [23, 25], [25, 27], [24, 26], [26, 28], // gambe
+            [0, 1], [1, 2], [2, 3], [3, 7], [0, 4], [4, 5], [5, 6], [6, 8] // viso
+        ];
+        
+        const HAND_CONNECTIONS = [
+            [0, 1], [1, 2], [2, 3], [3, 4], // pollice
+            [0, 5], [5, 6], [6, 7], [7, 8], // indice
+            [0, 9], [9, 10], [10, 11], [11, 12], // medio
+            [0, 13], [13, 14], [14, 15], [15, 16], // anulare
+            [0, 17], [17, 18], [18, 19], [19, 20], // mignolo
+            [5, 9], [9, 13], [13, 17] // palmo
+        ];
+        
+        // Helper per convertire hex in rgb
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+            } : { r: 0, g: 0, b: 0 };
+        }
+        
+        // Disegna griglia (solo linee)
+        function drawGrid(width, height) {
+            const density = state.gridDensity || 16; // default 16x16
+            const cellWidth = width / density;
+            const cellHeight = height / density;
+            
+            ctx.save();
+            
+            // Solo linee, semi-trasparenti
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            
+            // Linee verticali
+            for (let i = 1; i < density; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellWidth, 0);
+                ctx.lineTo(i * cellWidth, height);
+                ctx.stroke();
+            }
+            
+            // Linee orizzontali
+            for (let j = 1; j < density; j++) {
+                ctx.beginPath();
+                ctx.moveTo(0, j * cellHeight);
+                ctx.lineTo(width, j * cellHeight);
+                ctx.stroke();
+            }
+            
+            // Linee centrali più visibili
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            
+            // Linea centrale verticale
+            ctx.beginPath();
+            ctx.moveTo(width / 2, 0);
+            ctx.lineTo(width / 2, height);
+            ctx.stroke();
+            
+            // Linea centrale orizzontale
+            ctx.beginPath();
+            ctx.moveTo(0, height / 2);
+            ctx.lineTo(width, height / 2);
+            ctx.stroke();
+            
+            ctx.restore();
+        }
+
+        function drawFrame(source, pose) {
+            const { width, height } = elements.canvas;
+            
+            ctx.save();
+            
+            // Handle flip
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            // Draw video frame
+            ctx.drawImage(source, 0, 0, width, height);
+            
+            ctx.restore();
+            
+            // Draw grid if enabled
+            if (state.showGrid) {
+                drawGrid(width, height);
+            }
+            
+            // Draw skeleton overlay
+            if (state.showSkeleton && pose) {
+                drawSkeleton(pose, width, height);
+            }
+        }
+
+        function drawSkeleton(pose, width, height) {
+            const isHD = pose.isHD || false;
+            
+            // Colori per segmento (corrispondono agli allineamenti)
+            const segmentColors = {
+                shoulders: '#ff6b6b',    // rosso
+                hips: '#4ecdc4',         // turchese  
+                bowArm: '#ffe66d',       // giallo
+                drawArm: '#95e1d3',      // verde acqua
+                torso: '#dda0dd',        // viola
+                head: '#87ceeb',         // azzurro
+                legs: '#ffffff'          // bianco per gambe
+            };
+            
+            ctx.save();
+            
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 4;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const keypoints = pose.keypoints;
+            const kp = keypoints;
+            
+            // Determina braccio arco in base alla stance
+            const bowSide = state.stance === 'left' ? 'left' : 'right';
+            const drawSide = state.stance === 'left' ? 'right' : 'left';
+            
+            // Funzione per disegnare linea
+            const drawLine = (p1, p2, color, lineWidth = 6) => {
+                if (p1 && p2 && p1.score > 0.3 && p2.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    ctx.moveTo(p1.x, p1.y);
+                    ctx.lineTo(p2.x, p2.y);
+                    ctx.stroke();
+                }
+            };
+            
+            // Funzione per disegnare punto
+            const drawPoint = (p, color, radius = 8) => {
+                if (p && p.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 0;
+                    ctx.stroke();
+                    ctx.shadowBlur = 4;
+                }
+            };
+            
+            // SPALLE (rosso)
+            drawLine(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.rightShoulder], segmentColors.shoulders, 8);
+            drawPoint(kp[KEYPOINTS.leftShoulder], segmentColors.shoulders, 10);
+            drawPoint(kp[KEYPOINTS.rightShoulder], segmentColors.shoulders, 10);
+            
+            // FIANCHI (turchese)
+            drawLine(kp[KEYPOINTS.leftHip], kp[KEYPOINTS.rightHip], segmentColors.hips, 8);
+            drawPoint(kp[KEYPOINTS.leftHip], segmentColors.hips, 10);
+            drawPoint(kp[KEYPOINTS.rightHip], segmentColors.hips, 10);
+            
+            // BUSTO - connessioni spalle-fianchi (viola)
+            drawLine(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.leftHip], segmentColors.torso, 6);
+            drawLine(kp[KEYPOINTS.rightShoulder], kp[KEYPOINTS.rightHip], segmentColors.torso, 6);
+            
+            // BRACCIO ARCO (giallo)
+            if (bowSide === 'left') {
+                drawLine(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.leftElbow], segmentColors.bowArm, 6);
+                drawLine(kp[KEYPOINTS.leftElbow], kp[KEYPOINTS.leftWrist], segmentColors.bowArm, 6);
+                drawPoint(kp[KEYPOINTS.leftElbow], segmentColors.bowArm);
+                drawPoint(kp[KEYPOINTS.leftWrist], segmentColors.bowArm);
+            } else {
+                drawLine(kp[KEYPOINTS.rightShoulder], kp[KEYPOINTS.rightElbow], segmentColors.bowArm, 6);
+                drawLine(kp[KEYPOINTS.rightElbow], kp[KEYPOINTS.rightWrist], segmentColors.bowArm, 6);
+                drawPoint(kp[KEYPOINTS.rightElbow], segmentColors.bowArm);
+                drawPoint(kp[KEYPOINTS.rightWrist], segmentColors.bowArm);
+            }
+            
+            // BRACCIO TRAZIONE (verde acqua)
+            if (drawSide === 'left') {
+                drawLine(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.leftElbow], segmentColors.drawArm, 6);
+                drawLine(kp[KEYPOINTS.leftElbow], kp[KEYPOINTS.leftWrist], segmentColors.drawArm, 6);
+                drawPoint(kp[KEYPOINTS.leftElbow], segmentColors.drawArm);
+                drawPoint(kp[KEYPOINTS.leftWrist], segmentColors.drawArm);
+            } else {
+                drawLine(kp[KEYPOINTS.rightShoulder], kp[KEYPOINTS.rightElbow], segmentColors.drawArm, 6);
+                drawLine(kp[KEYPOINTS.rightElbow], kp[KEYPOINTS.rightWrist], segmentColors.drawArm, 6);
+                drawPoint(kp[KEYPOINTS.rightElbow], segmentColors.drawArm);
+                drawPoint(kp[KEYPOINTS.rightWrist], segmentColors.drawArm);
+            }
+            
+            // TESTA (azzurro)
+            drawLine(kp[KEYPOINTS.nose], kp[KEYPOINTS.leftEye], segmentColors.head, 4);
+            drawLine(kp[KEYPOINTS.nose], kp[KEYPOINTS.rightEye], segmentColors.head, 4);
+            drawLine(kp[KEYPOINTS.leftEye], kp[KEYPOINTS.leftEar], segmentColors.head, 4);
+            drawLine(kp[KEYPOINTS.rightEye], kp[KEYPOINTS.rightEar], segmentColors.head, 4);
+            drawPoint(kp[KEYPOINTS.nose], segmentColors.head, 8);
+            drawPoint(kp[KEYPOINTS.leftEye], segmentColors.head, 5);
+            drawPoint(kp[KEYPOINTS.rightEye], segmentColors.head, 5);
+            drawPoint(kp[KEYPOINTS.leftEar], segmentColors.head, 5);
+            drawPoint(kp[KEYPOINTS.rightEar], segmentColors.head, 5);
+            
+            // Linea collo (arancione)
+            const midShoulder = {
+                x: (kp[KEYPOINTS.leftShoulder].x + kp[KEYPOINTS.rightShoulder].x) / 2,
+                y: (kp[KEYPOINTS.leftShoulder].y + kp[KEYPOINTS.rightShoulder].y) / 2,
+                score: Math.min(kp[KEYPOINTS.leftShoulder].score, kp[KEYPOINTS.rightShoulder].score)
+            };
+            drawLine(midShoulder, kp[KEYPOINTS.nose], '#ff9f43', 5);
+            
+            // GAMBE (bianco)
+            drawLine(kp[KEYPOINTS.leftHip], kp[KEYPOINTS.leftKnee], segmentColors.legs, 5);
+            drawLine(kp[KEYPOINTS.leftKnee], kp[KEYPOINTS.leftAnkle], segmentColors.legs, 5);
+            drawLine(kp[KEYPOINTS.rightHip], kp[KEYPOINTS.rightKnee], segmentColors.legs, 5);
+            drawLine(kp[KEYPOINTS.rightKnee], kp[KEYPOINTS.rightAnkle], segmentColors.legs, 5);
+            drawPoint(kp[KEYPOINTS.leftKnee], segmentColors.legs, 7);
+            drawPoint(kp[KEYPOINTS.leftAnkle], segmentColors.legs, 7);
+            drawPoint(kp[KEYPOINTS.rightKnee], segmentColors.legs, 7);
+            drawPoint(kp[KEYPOINTS.rightAnkle], segmentColors.legs, 7);
+            
+            ctx.restore();
+        }
+
+        function drawAlignmentLines(keypoints, config) {
+            const leftShoulder = keypoints[KEYPOINTS.leftShoulder];
+            const rightShoulder = keypoints[KEYPOINTS.rightShoulder];
+            const leftHip = keypoints[KEYPOINTS.leftHip];
+            const rightHip = keypoints[KEYPOINTS.rightHip];
+            
+            // Shoulder line
+            if (leftShoulder && rightShoulder && leftShoulder.score > 0.3 && rightShoulder.score > 0.3) {
+                ctx.setLineDash([10, 5]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(leftShoulder.x - 50, leftShoulder.y);
+                ctx.lineTo(rightShoulder.x + 50, rightShoulder.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+            
+            // Hip line
+            if (leftHip && rightHip && leftHip.score > 0.3 && rightHip.score > 0.3) {
+                ctx.setLineDash([10, 5]);
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(leftHip.x - 50, leftHip.y);
+                ctx.lineTo(rightHip.x + 50, rightHip.y);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+        }
+
+        function calculateAngle(p1, p2, p3) {
+            const angle = Math.atan2(p3.y - p2.y, p3.x - p2.x) - 
+                         Math.atan2(p1.y - p2.y, p1.x - p2.x);
+            return Math.abs(angle * 180 / Math.PI);
+        }
+
+        function calculateLineAngle(p1, p2) {
+            return Math.atan2(p2.y - p1.y, p2.x - p1.x) * 180 / Math.PI;
+        }
+
+        function updateAlignments(pose) {
+            const kp = pose.keypoints;
+            const config = bowConfig[state.bowType];
+            const thresholds = config.thresholds;
+            
+            // Determine bow arm based on stance
+            const bowShoulder = state.stance === 'left' ? kp[KEYPOINTS.leftShoulder] : kp[KEYPOINTS.rightShoulder];
+            const bowElbow = state.stance === 'left' ? kp[KEYPOINTS.leftElbow] : kp[KEYPOINTS.rightElbow];
+            const bowWrist = state.stance === 'left' ? kp[KEYPOINTS.leftWrist] : kp[KEYPOINTS.rightWrist];
+            const drawShoulder = state.stance === 'left' ? kp[KEYPOINTS.rightShoulder] : kp[KEYPOINTS.leftShoulder];
+            const drawElbow = state.stance === 'left' ? kp[KEYPOINTS.rightElbow] : kp[KEYPOINTS.leftElbow];
+            const drawWrist = state.stance === 'left' ? kp[KEYPOINTS.rightWrist] : kp[KEYPOINTS.leftWrist];
+            
+            // Shoulders alignment
+            const shoulderAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.rightShoulder]));
+            updateAlignmentUI('alignShoulders', shoulderAngle, thresholds.shoulders);
+            updateAngleOverlay('angleShoulders', shoulderAngle, thresholds.shoulders, '#ff6b6b');
+            
+            // Hips alignment
+            const hipAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftHip], kp[KEYPOINTS.rightHip]));
+            updateAlignmentUI('alignHips', hipAngle, thresholds.hips);
+            updateAngleOverlay('angleHips', hipAngle, thresholds.hips, '#4ecdc4');
+            
+            // Bow arm angle
+            if (bowShoulder.score > 0.3 && bowElbow.score > 0.3 && bowWrist.score > 0.3) {
+                const bowArmAngle = calculateAngle(bowShoulder, bowElbow, bowWrist);
+                const bowArmDiff = Math.abs(bowArmAngle - thresholds.bowArm.target);
+                updateAlignmentUI('alignBowArm', bowArmAngle, { good: thresholds.bowArm.good, warning: thresholds.bowArm.warning }, true);
+                updateAngleOverlay('angleBowArm', bowArmAngle, { good: thresholds.bowArm.good, warning: thresholds.bowArm.warning }, '#ffe66d', true);
+            }
+            
+            // Draw arm angle
+            if (drawShoulder.score > 0.3 && drawElbow.score > 0.3 && drawWrist.score > 0.3) {
+                const drawArmAngle = calculateAngle(drawShoulder, drawElbow, drawWrist);
+                updateAlignmentUI('alignDrawArm', drawArmAngle, { good: 20, warning: 40 }, true);
+                updateAngleOverlay('angleDrawArm', drawArmAngle, { good: 20, warning: 40 }, '#95e1d3', true);
+            }
+            
+            // Torso alignment
+            const midShoulder = {
+                x: (kp[KEYPOINTS.leftShoulder].x + kp[KEYPOINTS.rightShoulder].x) / 2,
+                y: (kp[KEYPOINTS.leftShoulder].y + kp[KEYPOINTS.rightShoulder].y) / 2
+            };
+            const midHip = {
+                x: (kp[KEYPOINTS.leftHip].x + kp[KEYPOINTS.rightHip].x) / 2,
+                y: (kp[KEYPOINTS.leftHip].y + kp[KEYPOINTS.rightHip].y) / 2
+            };
+            const torsoAngle = Math.abs(90 - Math.abs(calculateLineAngle(midHip, midShoulder)));
+            updateAlignmentUI('alignTorso', torsoAngle, thresholds.torso);
+            updateAngleOverlay('angleTorso', torsoAngle, thresholds.torso, '#dda0dd');
+            
+            // Head alignment
+            const nose = kp[KEYPOINTS.nose];
+            if (nose.score > 0.3) {
+                const headAngle = Math.abs(calculateLineAngle(midShoulder, nose) + 90);
+                updateAlignmentUI('alignHead', headAngle, { good: 5, warning: 10 });
+                updateAngleOverlay('angleHead', headAngle, { good: 5, warning: 10 }, '#87ceeb');
+            }
+        }
+
+        function updateAlignmentUI(elementId, value, thresholds, isAbsolute = false) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            const valueSpan = element.querySelector('.alignment-value');
+            
+            let status = 'bad';
+            let compareValue = isAbsolute ? Math.abs(value - 180) : value;
+            
+            if (compareValue <= thresholds.good) {
+                status = 'good';
+            } else if (compareValue <= thresholds.warning) {
+                status = 'warning';
+            }
+            
+            element.className = `alignment-item ${status}`;
+            valueSpan.textContent = `${Math.round(value)}°`;
+        }
+        
+        function updateAngleOverlay(elementId, value, thresholds, baseColor, isAbsolute = false) {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            const valueSpan = element.querySelector('.angle-value');
+            
+            let status = 'bad';
+            let compareValue = isAbsolute ? Math.abs(value - 180) : value;
+            
+            if (compareValue <= thresholds.good) {
+                status = 'good';
+            } else if (compareValue <= thresholds.warning) {
+                status = 'warning';
+            }
+            
+            element.className = `angle-item ${status}`;
+            element.style.setProperty('--angle-color', status === 'good' ? '#22c55e' : status === 'warning' ? '#eab308' : '#ef4444');
+            element.style.borderLeftColor = baseColor;
+            valueSpan.style.color = status === 'good' ? '#22c55e' : status === 'warning' ? '#eab308' : '#ef4444';
+            valueSpan.textContent = `${Math.round(value)}°`;
+        }
+
+        function updateFps() {
+            state.frameCount++;
+            const now = Date.now();
+            const elapsed = now - state.lastFpsTime;
+            
+            if (elapsed >= 1000) {
+                state.fps = Math.round(state.frameCount * 1000 / elapsed);
+                elements.fpsCounter.textContent = `${state.fps} FPS`;
+                state.frameCount = 0;
+                state.lastFpsTime = now;
+            }
+        }
+
+        // Recording functionality
+        let mediaRecorder;
+        let recordedChunks = [];
+
+        function startRecording() {
+            recordedChunks = [];
+            const stream = elements.video.srcObject;
+            
+            const options = { mimeType: 'video/webm;codecs=vp9' };
+            if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                options.mimeType = 'video/webm';
+            }
+            
+            mediaRecorder = new MediaRecorder(stream, options);
+            
+            mediaRecorder.ondataavailable = (e) => {
+                if (e.data.size > 0) {
+                    recordedChunks.push(e.data);
+                }
+            };
+            
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                saveRecording(blob);
+            };
+            
+            mediaRecorder.start(100);
+            state.isRecording = true;
+            
+            elements.recordBtn.classList.add('recording');
+            elements.modeIndicator.classList.add('recording');
+            elements.modeText.textContent = 'Registrazione';
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && state.isRecording) {
+                mediaRecorder.stop();
+                state.isRecording = false;
+                
+                elements.recordBtn.classList.remove('recording');
+                elements.modeIndicator.classList.remove('recording');
+                elements.modeText.textContent = 'Live';
+            }
+        }
+
+        function saveRecording(blob) {
+            const athleteName = elements.athleteName.value || 'Atleta';
+            const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            const bowType = state.bowType.charAt(0).toUpperCase() + state.bowType.slice(1);
+            
+            const recording = {
+                id: Date.now(),
+                name: `${athleteName} - ${bowType}`,
+                time: timestamp,
+                blob: blob,
+                url: URL.createObjectURL(blob)
+            };
+            
+            state.recordings.unshift(recording);
+            updateRecordingsList();
+        }
+
+        function updateRecordingsList() {
+            if (state.recordings.length === 0) {
+                elements.recordingsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M3 6a2 2 0 012-2h8a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6z"/>
+                        </svg>
+                        <p>Nessuna registrazione</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            elements.recordingsList.innerHTML = state.recordings.map(rec => `
+                <div class="recording-item" data-id="${rec.id}">
+                    <div class="recording-info">
+                        <span class="recording-name">${rec.name}</span>
+                        <span class="recording-meta">${rec.time}</span>
+                    </div>
+                    <div class="recording-actions">
+                        <button class="recording-download" data-id="${rec.id}" title="Scarica">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                            </svg>
+                        </button>
+                        <button class="recording-delete" data-id="${rec.id}" title="Elimina">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add click listeners per visualizzare
+            elements.recordingsList.querySelectorAll('.recording-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.recording-delete') && !e.target.closest('.recording-download')) {
+                        const id = parseInt(item.dataset.id);
+                        playRecording(id);
+                    }
+                });
+            });
+            
+            // Add click listeners per download
+            elements.recordingsList.querySelectorAll('.recording-download').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    downloadRecording(id);
+                });
+            });
+            
+            // Add click listeners per eliminare
+            elements.recordingsList.querySelectorAll('.recording-delete').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.id);
+                    deleteRecording(id);
+                });
+            });
+        }
+        
+        function downloadRecording(id) {
+            const recording = state.recordings.find(r => r.id === id);
+            if (!recording) return;
+            
+            const link = document.createElement('a');
+            const filename = `${recording.name.replace(/[^a-z0-9]/gi, '_')}_${recording.id}.webm`;
+            link.href = recording.url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function playRecording(id) {
+            const recording = state.recordings.find(r => r.id === id);
+            if (!recording) return;
+            
+            state.currentRecording = recording;
+            state.isPlayback = true;
+            state.currentFrame = 0;
+            
+            elements.video.style.display = 'none';
+            elements.playbackVideo.style.display = 'block';
+            elements.playbackVideo.src = recording.url;
+            elements.playbackVideo.playbackRate = state.playbackSpeed;
+            
+            elements.liveControls.style.display = 'none';
+            elements.playbackControls.classList.add('active');
+            
+            elements.modeIndicator.classList.add('playback');
+            elements.modeText.textContent = 'Playback';
+            
+            elements.playbackVideo.onloadedmetadata = () => {
+                elements.canvas.width = elements.playbackVideo.videoWidth;
+                elements.canvas.height = elements.playbackVideo.videoHeight;
+                updatePlaybackUI();
+            };
+            
+            elements.playbackVideo.ontimeupdate = updatePlaybackUI;
+            
+            // Start pose detection on playback
+            detectPlaybackPose();
+        }
+
+        async function detectPlaybackPose() {
+            if (!state.isPlayback) return;
+            
+            if (elements.playbackVideo.readyState >= 2) {
+                const currentTime = elements.playbackVideo.currentTime;
+                const frameNum = Math.floor(currentTime * 30);
+                
+                let pose = null;
+                
+                // Usa frame analizzato se disponibile
+                if (state.analyzedFrames[frameNum]) {
+                    pose = state.analyzedFrames[frameNum];
+                } else if (state.detector && !elements.playbackVideo.paused) {
+                    // Solo se il video sta andando, altrimenti usa l'ultima pose
+                    const poses = await state.detector.estimatePoses(elements.playbackVideo);
+                    if (poses.length > 0) {
+                        if (state.useBlazePose) {
+                            pose = convertBlazePoseToMoveNet(
+                                poses[0],
+                                elements.playbackVideo.videoWidth,
+                                elements.playbackVideo.videoHeight
+                            );
+                        } else {
+                            pose = poses[0];
+                        }
+                    }
+                } else if (state.currentPose) {
+                    // Video in pausa, usa l'ultima pose
+                    pose = state.currentPose;
+                }
+                
+                if (pose) {
+                    state.currentPose = pose;
+                    updateAlignments(pose);
+                }
+                
+                drawFrame(elements.playbackVideo, pose);
+            }
+            
+            // Continua il loop solo se siamo in playback
+            if (state.isPlayback) {
+                requestAnimationFrame(detectPlaybackPose);
+            }
+        }
+        
+        // Analisi avanzata con BlazePose
+        async function startAdvancedAnalysis() {
+            if (state.isAnalyzing) return;
+            
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const video = elements.playbackVideo;
+            const wasPlaying = !video.paused;
+            
+            video.pause();
+            state.isAnalyzing = true;
+            analyzeBtn.classList.add('analyzing');
+            analyzeBtn.querySelector('.analyze-text').textContent = '0%';
+            
+            // Carica BlazePose se non esiste
+            if (!state.blazeDetector) {
+                analyzeBtn.querySelector('.analyze-text').textContent = '...';
+                try {
+                    state.blazeDetector = await poseDetection.createDetector(
+                        poseDetection.SupportedModels.BlazePose,
+                        {
+                            runtime: 'tfjs',
+                            modelType: 'full',
+                            enableSmoothing: false
+                        }
+                    );
+                } catch (error) {
+                    console.error('Errore caricamento BlazePose:', error);
+                    state.isAnalyzing = false;
+                    analyzeBtn.classList.remove('analyzing');
+                    analyzeBtn.querySelector('.analyze-text').textContent = 'ERR';
+                    return;
+                }
+            }
+            
+            const duration = video.duration;
+            const fps = 30;
+            const totalFrames = Math.floor(duration * fps);
+            const originalTime = video.currentTime;
+            
+            state.analyzedFrames = {};
+            
+            // Funzione per aspettare che il video sia pronto dopo seek
+            const waitForSeek = () => {
+                return new Promise(resolve => {
+                    const onSeeked = () => {
+                        video.removeEventListener('seeked', onSeeked);
+                        // Piccolo delay extra per assicurarsi che il frame sia renderizzato
+                        setTimeout(resolve, 100);
+                    };
+                    video.addEventListener('seeked', onSeeked);
+                });
+            };
+            
+            for (let frameNum = 0; frameNum < totalFrames && state.isAnalyzing; frameNum++) {
+                // Imposta il tempo e aspetta il seek
+                const targetTime = frameNum / fps;
+                video.currentTime = targetTime;
+                await waitForSeek();
+                
+                // Assicurati che il video sia pronto
+                if (video.readyState < 2) {
+                    await new Promise(resolve => {
+                        video.oncanplay = resolve;
+                    });
+                }
+                
+                try {
+                    const results = await state.blazeDetector.estimatePoses(video);
+                    if (results.length > 0) {
+                        const converted = convertBlazePoseToMoveNet(
+                            results[0],
+                            video.videoWidth,
+                            video.videoHeight
+                        );
+                        state.analyzedFrames[frameNum] = converted;
+                        console.log(`Frame ${frameNum} analizzato:`, converted?.keypoints?.length, 'punti');
+                    }
+                } catch (e) {
+                    console.error('Errore frame', frameNum, e);
+                }
+                
+                const progress = Math.round(((frameNum + 1) / totalFrames) * 100);
+                analyzeBtn.querySelector('.analyze-text').textContent = `${progress}%`;
+            }
+            
+            console.log('Analisi completata. Frame analizzati:', Object.keys(state.analyzedFrames).length);
+            
+            video.currentTime = originalTime;
+            state.isAnalyzing = false;
+            analyzeBtn.classList.remove('analyzing');
+            analyzeBtn.classList.add('done');
+            analyzeBtn.querySelector('.analyze-text').textContent = '✓';
+            
+            if (wasPlaying) video.play();
+        }
+        
+        // BlazePose keypoints indices
+        const BLAZEPOSE_KEYPOINTS = {
+            nose: 0,
+            leftEyeInner: 1,
+            leftEye: 2,
+            leftEyeOuter: 3,
+            rightEyeInner: 4,
+            rightEye: 5,
+            rightEyeOuter: 6,
+            leftEar: 7,
+            rightEar: 8,
+            mouthLeft: 9,
+            mouthRight: 10,
+            leftShoulder: 11,
+            rightShoulder: 12,
+            leftElbow: 13,
+            rightElbow: 14,
+            leftWrist: 15,
+            rightWrist: 16,
+            leftPinky: 17,
+            rightPinky: 18,
+            leftIndex: 19,
+            rightIndex: 20,
+            leftThumb: 21,
+            rightThumb: 22,
+            leftHip: 23,
+            rightHip: 24,
+            leftKnee: 25,
+            rightKnee: 26,
+            leftAnkle: 27,
+            rightAnkle: 28,
+            leftHeel: 29,
+            rightHeel: 30,
+            leftFootIndex: 31,
+            rightFootIndex: 32
+        };
+        
+        // Connessioni per BlazePose (include mani e collo)
+        const BLAZEPOSE_CONNECTIONS = [
+            // Viso
+            [BLAZEPOSE_KEYPOINTS.nose, BLAZEPOSE_KEYPOINTS.leftEyeInner],
+            [BLAZEPOSE_KEYPOINTS.leftEyeInner, BLAZEPOSE_KEYPOINTS.leftEye],
+            [BLAZEPOSE_KEYPOINTS.leftEye, BLAZEPOSE_KEYPOINTS.leftEyeOuter],
+            [BLAZEPOSE_KEYPOINTS.leftEyeOuter, BLAZEPOSE_KEYPOINTS.leftEar],
+            [BLAZEPOSE_KEYPOINTS.nose, BLAZEPOSE_KEYPOINTS.rightEyeInner],
+            [BLAZEPOSE_KEYPOINTS.rightEyeInner, BLAZEPOSE_KEYPOINTS.rightEye],
+            [BLAZEPOSE_KEYPOINTS.rightEye, BLAZEPOSE_KEYPOINTS.rightEyeOuter],
+            [BLAZEPOSE_KEYPOINTS.rightEyeOuter, BLAZEPOSE_KEYPOINTS.rightEar],
+            [BLAZEPOSE_KEYPOINTS.mouthLeft, BLAZEPOSE_KEYPOINTS.mouthRight],
+            // Collo (connessione tra naso/orecchie e spalle)
+            [BLAZEPOSE_KEYPOINTS.leftEar, BLAZEPOSE_KEYPOINTS.leftShoulder],
+            [BLAZEPOSE_KEYPOINTS.rightEar, BLAZEPOSE_KEYPOINTS.rightShoulder],
+            // Torso
+            [BLAZEPOSE_KEYPOINTS.leftShoulder, BLAZEPOSE_KEYPOINTS.rightShoulder],
+            [BLAZEPOSE_KEYPOINTS.leftShoulder, BLAZEPOSE_KEYPOINTS.leftHip],
+            [BLAZEPOSE_KEYPOINTS.rightShoulder, BLAZEPOSE_KEYPOINTS.rightHip],
+            [BLAZEPOSE_KEYPOINTS.leftHip, BLAZEPOSE_KEYPOINTS.rightHip],
+            // Braccio sinistro
+            [BLAZEPOSE_KEYPOINTS.leftShoulder, BLAZEPOSE_KEYPOINTS.leftElbow],
+            [BLAZEPOSE_KEYPOINTS.leftElbow, BLAZEPOSE_KEYPOINTS.leftWrist],
+            // Mano sinistra
+            [BLAZEPOSE_KEYPOINTS.leftWrist, BLAZEPOSE_KEYPOINTS.leftThumb],
+            [BLAZEPOSE_KEYPOINTS.leftWrist, BLAZEPOSE_KEYPOINTS.leftIndex],
+            [BLAZEPOSE_KEYPOINTS.leftWrist, BLAZEPOSE_KEYPOINTS.leftPinky],
+            [BLAZEPOSE_KEYPOINTS.leftIndex, BLAZEPOSE_KEYPOINTS.leftPinky],
+            // Braccio destro
+            [BLAZEPOSE_KEYPOINTS.rightShoulder, BLAZEPOSE_KEYPOINTS.rightElbow],
+            [BLAZEPOSE_KEYPOINTS.rightElbow, BLAZEPOSE_KEYPOINTS.rightWrist],
+            // Mano destra
+            [BLAZEPOSE_KEYPOINTS.rightWrist, BLAZEPOSE_KEYPOINTS.rightThumb],
+            [BLAZEPOSE_KEYPOINTS.rightWrist, BLAZEPOSE_KEYPOINTS.rightIndex],
+            [BLAZEPOSE_KEYPOINTS.rightWrist, BLAZEPOSE_KEYPOINTS.rightPinky],
+            [BLAZEPOSE_KEYPOINTS.rightIndex, BLAZEPOSE_KEYPOINTS.rightPinky],
+            // Gamba sinistra
+            [BLAZEPOSE_KEYPOINTS.leftHip, BLAZEPOSE_KEYPOINTS.leftKnee],
+            [BLAZEPOSE_KEYPOINTS.leftKnee, BLAZEPOSE_KEYPOINTS.leftAnkle],
+            [BLAZEPOSE_KEYPOINTS.leftAnkle, BLAZEPOSE_KEYPOINTS.leftHeel],
+            [BLAZEPOSE_KEYPOINTS.leftAnkle, BLAZEPOSE_KEYPOINTS.leftFootIndex],
+            [BLAZEPOSE_KEYPOINTS.leftHeel, BLAZEPOSE_KEYPOINTS.leftFootIndex],
+            // Gamba destra
+            [BLAZEPOSE_KEYPOINTS.rightHip, BLAZEPOSE_KEYPOINTS.rightKnee],
+            [BLAZEPOSE_KEYPOINTS.rightKnee, BLAZEPOSE_KEYPOINTS.rightAnkle],
+            [BLAZEPOSE_KEYPOINTS.rightAnkle, BLAZEPOSE_KEYPOINTS.rightHeel],
+            [BLAZEPOSE_KEYPOINTS.rightAnkle, BLAZEPOSE_KEYPOINTS.rightFootIndex],
+            [BLAZEPOSE_KEYPOINTS.rightHeel, BLAZEPOSE_KEYPOINTS.rightFootIndex]
+        ];
+        
+        // Converte BlazePose per uso con drawSkeleton HD
+        function convertBlazePoseForHD(blazePose) {
+            return {
+                keypoints: blazePose.keypoints,
+                isHD: true
+            };
+        }
+        
+        // Converte BlazePose (33 punti) in MoveNet (17 punti) per compatibilità allineamenti
+        function convertBlazePoseToMoveNet(blazePose, videoWidth, videoHeight) {
+            const bkp = blazePose.keypoints;
+            
+            if (!bkp || bkp.length < 33) {
+                console.warn('BlazePose keypoints non validi:', bkp?.length);
+                return null;
+            }
+            
+            // BlazePose può restituire coordinate normalizzate (0-1) o in pixel
+            // Controlliamo se dobbiamo convertire
+            const firstKp = bkp[0];
+            const needsScaling = (firstKp.x <= 1 && firstKp.y <= 1) || isNaN(firstKp.x);
+            
+            // Se le coordinate sono NaN, proviamo a usare le coordinate 3D normalizzate
+            const getCoords = (kp) => {
+                let x = kp.x;
+                let y = kp.y;
+                
+                // Se x,y sono NaN ma abbiamo coordinate normalizzate
+                if (isNaN(x) || isNaN(y)) {
+                    // BlazePose a volte mette le coordinate in modo diverso
+                    if (kp.xNormalized !== undefined) {
+                        x = kp.xNormalized * videoWidth;
+                        y = kp.yNormalized * videoHeight;
+                    }
+                } else if (needsScaling && x <= 1 && y <= 1) {
+                    // Coordinate normalizzate 0-1
+                    x = x * videoWidth;
+                    y = y * videoHeight;
+                }
+                
+                return { x, y, score: kp.score || 0 };
+            };
+            
+            // Mapping indici BlazePose -> MoveNet
+            const mapping = [
+                0,  // nose
+                2,  // left eye
+                5,  // right eye
+                7,  // left ear
+                8,  // right ear
+                11, // left shoulder
+                12, // right shoulder
+                13, // left elbow
+                14, // right elbow
+                15, // left wrist
+                16, // right wrist
+                23, // left hip
+                24, // right hip
+                25, // left knee
+                26, // right knee
+                27, // left ankle
+                28  // right ankle
+            ];
+            
+            const keypoints = mapping.map((blazeIdx, moveNetIdx) => {
+                const bp = bkp[blazeIdx];
+                if (!bp) return { x: 0, y: 0, score: 0, name: '' };
+                const coords = getCoords(bp);
+                return {
+                    x: coords.x,
+                    y: coords.y,
+                    score: coords.score,
+                    name: Object.keys(KEYPOINTS)[moveNetIdx]
+                };
+            });
+            
+            // Converti anche tutti i 33 punti per il disegno completo
+            const keypointsFull = bkp.map(kp => {
+                const coords = getCoords(kp);
+                return {
+                    x: coords.x,
+                    y: coords.y,
+                    score: kp.score || 0,
+                    name: kp.name
+                };
+            });
+            
+            return { 
+                keypoints,
+                keypointsFull,
+                isHD: true
+            };
+        }
+
+        function updatePlaybackUI() {
+            const video = elements.playbackVideo;
+            const progress = (video.currentTime / video.duration) * 100;
+            
+            elements.timelineProgress.style.width = `${progress}%`;
+            elements.timelineHandle.style.left = `${progress}%`;
+            
+            const currentFrame = Math.floor(video.currentTime * 30);
+            const totalFrames = Math.floor(video.duration * 30);
+            elements.frameCounter.textContent = `${currentFrame} / ${totalFrames}`;
+        }
+
+        function backToLive() {
+            state.isPlayback = false;
+            state.isPlaying = false;
+            state.isAnalyzing = false;
+            state.currentRecording = null;
+            state.analyzedFrames = {};
+            
+            elements.playbackVideo.pause();
+            elements.playbackVideo.src = '';
+            elements.playbackVideo.style.display = 'none';
+            elements.video.style.display = 'block';
+            
+            elements.playbackControls.classList.remove('active');
+            elements.liveControls.style.display = 'flex';
+            
+            elements.modeIndicator.classList.remove('playback');
+            elements.modeText.textContent = 'Live';
+            
+            // Reset pulsante analisi
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.classList.remove('analyzing', 'done');
+            analyzeBtn.querySelector('.analyze-text').textContent = 'HD';
+            
+            elements.canvas.width = elements.video.videoWidth;
+            elements.canvas.height = elements.video.videoHeight;
+            
+            detectPose();
+        }
+
+        function deleteRecording(id) {
+            const index = state.recordings.findIndex(r => r.id === id);
+            if (index > -1) {
+                URL.revokeObjectURL(state.recordings[index].url);
+                state.recordings.splice(index, 1);
+                updateRecordingsList();
+                
+                if (state.currentRecording && state.currentRecording.id === id) {
+                    backToLive();
+                }
+            }
+        }
+
+        function takeScreenshot() {
+            const link = document.createElement('a');
+            link.download = `archery-${Date.now()}.png`;
+            link.href = elements.canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Event Listeners
+        function setupEventListeners() {
+            // Bow type selector
+            document.querySelectorAll('.bow-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.bow-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.bowType = btn.dataset.bow;
+                    
+                    document.documentElement.style.setProperty('--accent-current', 
+                        bowConfig[state.bowType].color);
+                });
+            });
+            
+            // Stance selector
+            document.querySelectorAll('.stance-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.stance-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.stance = btn.dataset.stance;
+                });
+            });
+            
+            // Model selector
+            document.querySelectorAll('.model-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const newModel = btn.dataset.model;
+                    if (newModel === state.modelType) return;
+                    
+                    // Mostra loading con nome corretto
+                    const modelNames = {
+                        'thunder': 'MoveNet Thunder',
+                        'lightning': 'MoveNet Lightning', 
+                        'holistic': 'MediaPipe Holistic',
+                        'bodypix': 'BodyPix'
+                    };
+                    elements.loadingOverlay.classList.remove('hidden');
+                    elements.loadingOverlay.querySelector('.loading-text').textContent = 
+                        `Caricamento ${modelNames[newModel] || newModel}...`;
+                    
+                    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    
+                    try {
+                        await loadModel(newModel);
+                    } catch (error) {
+                        console.error('Errore caricamento modello:', error);
+                        alert('Errore nel caricamento del modello. Riprova.');
+                    }
+                    
+                    elements.loadingOverlay.classList.add('hidden');
+                });
+            });
+            
+            // Camera selector
+            elements.cameraSelect.addEventListener('change', (e) => {
+                if (e.target.value) {
+                    startCamera(e.target.value);
+                }
+            });
+            
+            // Record button
+            elements.recordBtn.addEventListener('click', () => {
+                if (state.isRecording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            });
+            
+            // Flip button
+            elements.flipBtn.addEventListener('click', () => {
+                state.flipVideo = !state.flipVideo;
+                elements.flipBtn.style.background = state.flipVideo ? 
+                    bowConfig[state.bowType].color : '';
+            });
+            
+            // Skeleton toggle
+            elements.skeletonBtn.addEventListener('click', () => {
+                state.showSkeleton = !state.showSkeleton;
+                elements.skeletonBtn.style.background = state.showSkeleton ? 
+                    bowConfig[state.bowType].color : '';
+            });
+            
+            // Grid toggle
+            elements.gridBtn.addEventListener('click', () => {
+                state.showGrid = !state.showGrid;
+                elements.gridBtn.style.background = state.showGrid ? 
+                    bowConfig[state.bowType].color : '';
+            });
+            
+            // Alignments toggle
+            document.getElementById('alignmentsBtn').addEventListener('click', () => {
+                state.showAlignments = !state.showAlignments;
+                document.getElementById('alignmentsBtn').style.background = state.showAlignments ? 
+                    bowConfig[state.bowType].color : '';
+                document.getElementById('anglesOverlay').style.display = state.showAlignments ? 'flex' : 'none';
+            });
+            
+            // Grid density
+            document.getElementById('gridDensitySelect').addEventListener('change', (e) => {
+                state.gridDensity = parseInt(e.target.value);
+            });
+            
+            // Screenshot
+            elements.screenshotBtn.addEventListener('click', takeScreenshot);
+            
+            // Fullscreen
+            elements.fullscreenBtn.addEventListener('click', () => {
+                const container = document.querySelector('.video-section');
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    container.requestFullscreen();
+                }
+            });
+            
+            // Hamburger menu toggle
+            const hamburgerBtn = document.getElementById('hamburgerBtn');
+            const fullscreenMenu = document.getElementById('fullscreenMenu');
+            const menuOverlay = document.getElementById('menuOverlay');
+            
+            hamburgerBtn.addEventListener('click', () => {
+                hamburgerBtn.classList.toggle('open');
+                fullscreenMenu.classList.toggle('open');
+                menuOverlay.classList.toggle('open');
+            });
+            
+            menuOverlay.addEventListener('click', () => {
+                hamburgerBtn.classList.remove('open');
+                fullscreenMenu.classList.remove('open');
+                menuOverlay.classList.remove('open');
+            });
+            
+            // Fullscreen menu - Bow type
+            document.querySelectorAll('.fs-bow-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.fs-bow-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.bow-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const bowBtn = document.querySelector(`.bow-btn[data-bow="${btn.dataset.bow}"]`);
+                    if (bowBtn) bowBtn.classList.add('active');
+                    state.bowType = btn.dataset.bow;
+                    document.documentElement.style.setProperty('--accent-current', bowConfig[state.bowType].color);
+                });
+            });
+            
+            // Fullscreen menu - Stance
+            document.querySelectorAll('.fs-stance-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.fs-stance-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.stance-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const stanceBtn = document.querySelector(`.stance-btn[data-stance="${btn.dataset.stance}"]`);
+                    if (stanceBtn) stanceBtn.classList.add('active');
+                    state.stance = btn.dataset.stance;
+                });
+            });
+            
+            // Fullscreen menu - Model
+            document.querySelectorAll('.fs-model-btn').forEach(btn => {
+                btn.addEventListener('click', async () => {
+                    const newModel = btn.dataset.model;
+                    if (newModel === state.modelType) return;
+                    
+                    // Chiudi menu temporaneamente
+                    hamburgerBtn.classList.remove('open');
+                    fullscreenMenu.classList.remove('open');
+                    menuOverlay.classList.remove('open');
+                    
+                    // Mostra loading
+                    const modelNames = {
+                        'thunder': 'MoveNet Thunder',
+                        'lightning': 'MoveNet Lightning', 
+                        'holistic': 'MediaPipe Holistic',
+                        'bodypix': 'BodyPix'
+                    };
+                    elements.loadingOverlay.classList.remove('hidden');
+                    elements.loadingOverlay.querySelector('.loading-text').textContent = 
+                        `Caricamento ${modelNames[newModel] || newModel}...`;
+                    
+                    document.querySelectorAll('.fs-model-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.model-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    const modelBtn = document.querySelector(`.model-btn[data-model="${newModel}"]`);
+                    if (modelBtn) modelBtn.classList.add('active');
+                    
+                    try {
+                        await loadModel(newModel);
+                    } catch (error) {
+                        console.error('Errore caricamento modello:', error);
+                    }
+                    
+                    elements.loadingOverlay.classList.add('hidden');
+                    
+                    // Torna a fullscreen
+                    const container = document.querySelector('.video-section');
+                    if (!document.fullscreenElement) {
+                        container.requestFullscreen();
+                    }
+                });
+            });
+            
+            // Fullscreen menu - Toggle buttons
+            document.getElementById('fsSkeletonBtn').addEventListener('click', function() {
+                state.showSkeleton = !state.showSkeleton;
+                this.classList.toggle('active', state.showSkeleton);
+                elements.skeletonBtn.style.background = state.showSkeleton ? bowConfig[state.bowType].color : '';
+            });
+            
+            document.getElementById('fsGridBtn').addEventListener('click', function() {
+                state.showGrid = !state.showGrid;
+                this.classList.toggle('active', state.showGrid);
+                elements.gridBtn.style.background = state.showGrid ? bowConfig[state.bowType].color : '';
+            });
+            
+            document.getElementById('fsAlignBtn').addEventListener('click', function() {
+                state.showAlignments = !state.showAlignments;
+                this.classList.toggle('active', state.showAlignments);
+                document.getElementById('anglesOverlay').style.display = state.showAlignments ? 'flex' : 'none';
+                document.getElementById('alignmentsBtn').style.background = state.showAlignments ? bowConfig[state.bowType].color : '';
+            });
+            
+            document.getElementById('fsFlipBtn').addEventListener('click', function() {
+                state.flipVideo = !state.flipVideo;
+                this.classList.toggle('active', state.flipVideo);
+                elements.flipBtn.style.background = state.flipVideo ? bowConfig[state.bowType].color : '';
+            });
+            
+            // Fullscreen menu - Grid density
+            document.querySelectorAll('.fs-grid-density').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.fs-grid-density').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.gridDensity = parseInt(btn.dataset.density);
+                    document.getElementById('gridDensitySelect').value = btn.dataset.density;
+                });
+            });
+            
+            // Fullscreen menu - Actions
+            document.getElementById('fsRecordBtn').addEventListener('click', () => {
+                if (state.isRecording) {
+                    stopRecording();
+                } else {
+                    startRecording();
+                }
+            });
+            
+            document.getElementById('fsScreenshotBtn').addEventListener('click', takeScreenshot);
+            
+            document.getElementById('fsExitBtn').addEventListener('click', () => {
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                }
+                hamburgerBtn.classList.remove('open');
+                fullscreenMenu.classList.remove('open');
+                menuOverlay.classList.remove('open');
+            });
+            
+            // Playback controls
+            elements.backToLiveBtn.addEventListener('click', backToLive);
+            
+            // Pulsante Analisi HD
+            document.getElementById('analyzeBtn').addEventListener('click', startAdvancedAnalysis);
+            
+            elements.playPauseBtn.addEventListener('click', () => {
+                if (elements.playbackVideo.paused) {
+                    elements.playbackVideo.play();
+                    state.isPlaying = true;
+                } else {
+                    elements.playbackVideo.pause();
+                    state.isPlaying = false;
+                }
+                updatePlayPauseIcon();
+            });
+            
+            elements.framePrevBtn.addEventListener('click', () => {
+                elements.playbackVideo.currentTime = Math.max(0, 
+                    elements.playbackVideo.currentTime - 1/30);
+            });
+            
+            elements.frameNextBtn.addEventListener('click', () => {
+                elements.playbackVideo.currentTime = Math.min(
+                    elements.playbackVideo.duration,
+                    elements.playbackVideo.currentTime + 1/30);
+            });
+            
+            // Timeline scrubbing
+            let isDragging = false;
+            
+            elements.timeline.addEventListener('mousedown', (e) => {
+                isDragging = true;
+                seekToPosition(e);
+            });
+            
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging) seekToPosition(e);
+            });
+            
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+            });
+            
+            elements.timeline.addEventListener('touchstart', (e) => {
+                isDragging = true;
+                seekToPosition(e.touches[0]);
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (isDragging) seekToPosition(e.touches[0]);
+            });
+            
+            document.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+            
+            function seekToPosition(e) {
+                const rect = elements.timeline.getBoundingClientRect();
+                const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                elements.playbackVideo.currentTime = percent * elements.playbackVideo.duration;
+            }
+            
+            // Speed controls
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.playbackSpeed = parseFloat(btn.dataset.speed);
+                    elements.playbackVideo.playbackRate = state.playbackSpeed;
+                });
+            });
+            
+            // Playback video events
+            elements.playbackVideo.addEventListener('play', () => {
+                state.isPlaying = true;
+                updatePlayPauseIcon();
+            });
+            
+            elements.playbackVideo.addEventListener('pause', () => {
+                state.isPlaying = false;
+                updatePlayPauseIcon();
+            });
+            
+            elements.playbackVideo.addEventListener('ended', () => {
+                state.isPlaying = false;
+                updatePlayPauseIcon();
+            });
+        }
+
+        function updatePlayPauseIcon() {
+            const icon = elements.playPauseBtn.querySelector('svg');
+            if (state.isPlaying) {
+                icon.innerHTML = '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>';
+            } else {
+                icon.innerHTML = '<polygon points="8,5 19,12 8,19"/>';
+            }
+        }
+
+        // Initialize skeleton button as active
+        document.addEventListener('DOMContentLoaded', () => {
+            elements.skeletonBtn.style.background = bowConfig[state.bowType].color;
+        });
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>

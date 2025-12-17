@@ -1,0 +1,26 @@
+{
+  "name": "Analisi Arciere",
+  "short_name": "Arciere",
+  "description": "Analisi postura arcieri - Polisportiva Gonone Dorgali",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a0a0b",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "logo-pol.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo-pol.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["sports", "fitness"],
+  "lang": "it"
+}
