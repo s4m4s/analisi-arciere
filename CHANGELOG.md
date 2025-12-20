@@ -1,7 +1,107 @@
 # Analisi Arciere - Changelog
 
-## Versione 17 (Corrente)
-**Data:** 14 Dicembre 2024
+## Versione 22 (Corrente)
+**Data:** 18 Dicembre 2025
+
+### Nuove Funzionalità
+- **Pagina Launcher**: Nuova pagina iniziale con installazione e selezione versioni
+- **5 Modelli AI**: Holistic (default), Lightning, UltraLight, PoseNet, BodyPix
+- **Offline Completo**: Download di tutti i modelli AI durante installazione
+- **Holistic Default**: Modello più compatibile come default
+
+### Modifiche
+- Rimosso PIN atleti (accesso diretto)
+- Rimosso Thunder (problemi compatibilità)
+- Aggiunto PoseNet come alternativa leggera
+- Separato index.html (launcher) da app.html (applicazione)
+- Manifest aggiornato per avvio corretto da icona home
+
+### File Principali
+- `index.html` - Pagina launcher (versioni + installazione)
+- `app.html` - Applicazione principale v22
+- `sw.js` - Service Worker per offline
+- `manifest.json` - Configurazione PWA
+
+---
+
+## Versione 21
+**Data:** 18 Dicembre 2025
+
+### Nuove Funzionalità
+- **UltraLight**: Nuovo modello BlazePose Lite per telefoni vecchi
+- Default cambiato a UltraLight
+
+---
+
+## Versione 20
+**Data:** 15 Dicembre 2025
+
+### Nuove Funzionalità
+- **PWA (Progressive Web App)**: App installabile su telefono, funziona offline
+- **Archivio Club**: Quando connesso al server locale, salva/visualizza video per atleta
+- **Pulsante Installa**: Nel modal versioni, pulsante per installare l'app
+- **Aggiornamenti automatici**: Notifica quando disponibile nuova versione
+
+### Modifiche
+- Rimosso PIN atleti (accesso diretto)
+- Service Worker per cache offline
+- Manifest PWA per installazione
+- API server per gestione archivio video
+
+### Server Locale
+- Salvataggio video in `C:\AnalisiArciere\archivio\`
+- Cartelle separate per ogni atleta
+- Conversione MP4 con FFmpeg (opzionale)
+- API REST per upload/download/lista video
+
+---
+
+## Versione 19
+**Data:** 15 Dicembre 2025
+
+### Nuove Funzionalità
+- **Registrazione Canvas**: Ora registra esattamente quello che si vede nel live (scheletro, griglia, allineamenti se attivi)
+- **Analisi Frame per Frame**: Per video registrati senza scheletro, pulsante "AI" analizza ogni frame con MoveNet
+- **Gestione intelligente playback**: 
+  - Video con scheletro → riproduce direttamente
+  - Video senza scheletro → mostra pulsante Analizza
+  - Video analizzato → usa i dati salvati per disegnare lo scheletro
+
+### Modifiche
+- Rimosso BlazePose (non funzionante), usa MoveNet per analisi
+- Pulsante analisi cambiato da "HD" a "AI"
+- Title pagina: "Analisi Arciere - Polisportiva Gonone Dorgali"
+- Creato index.html come file principale
+
+### File
+- `index.html` - File principale da caricare
+- `logo-pol.png` - Logo (deve stare nella stessa cartella)
+
+---
+
+## Versione 18
+**Data:** 15 Dicembre 2025
+
+### Nuove Funzionalità
+- **Configurazione Parametri Angoli**: Pulsante ingranaggio accanto alla selezione tipo arco per modificare le soglie (buono/attenzione) per ogni allineamento
+- **Gestione Atleti**: Sistema completo per registrare e selezionare atleti
+  - Nome e tipo arco obbligatori
+  - Selezione atleta cambia automaticamente il tipo arco
+  - Lista atleti persistente (localStorage)
+- **Protezione PIN**: Accesso alla gestione atleti protetto da PIN a 4 cifre
+- **Default Destrorsi**: L'app ora parte con posizione arciere "Destra" (destrorsi sono la maggioranza)
+
+### Parametri Configurabili per Tipo Arco
+- Spalle (soglia buono/attenzione)
+- Fianchi (soglia buono/attenzione)
+- Braccio Arco (soglia buono/attenzione)
+- Busto (soglia buono/attenzione)
+- Testa (soglia buono/attenzione)
+
+---
+
+## Versione 17
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
 - **Menu Hamburger Fullscreen**: In modalità schermo intero, pulsante hamburger in alto a destra con menu a scomparsa contenente tutti i controlli
@@ -20,7 +120,7 @@
 ---
 
 ## Versione 16
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Modifiche
 - **Colori Scheletro per Segmento**: Ogni parte del corpo ha un colore specifico che corrisponde agli allineamenti
@@ -37,7 +137,7 @@
 ---
 
 ## Versione 15
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
 - **Pulsante Toggle Allineamenti**: Nuovo pulsante per mostrare/nascondere l'overlay degli allineamenti
@@ -54,10 +154,10 @@
 ---
 
 ## Versione 14
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
-- **Logo Personalizzato**: Aggiunto logo "Polisportiva Tiro con l'Arco Gonone-Dorgali"
+- **Logo Personalizzato**: Aggiunto logo "Polisportiva Gonone Dorgali - Tiro con l'Arco Gonone-Dorgali"
 - Logo grande nella schermata di caricamento
 - Logo nel header accanto al titolo
 
@@ -67,7 +167,7 @@
 ---
 
 ## Versione 13
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
 - **Overlay Allineamenti su Video**: Angoli mostrati in sovraimpressione sotto "LIVE"
@@ -83,7 +183,7 @@
 ---
 
 ## Versione 12
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
 - **Griglia Solo Linee**: Rimossi quadrati colorati, solo linee
@@ -96,7 +196,7 @@
 ---
 
 ## Versione 11
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Nuove Funzionalità
 - **MediaPipe Holistic**: Rilevamento corpo + mani + viso
@@ -112,7 +212,7 @@
 ---
 
 ## Versione 10 e precedenti
-**Data:** 14 Dicembre 2024
+**Data:** 14 Dicembre 2025
 
 ### Funzionalità Base Implementate
 - Rilevamento pose in tempo reale con MoveNet

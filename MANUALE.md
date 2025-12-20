@@ -1,17 +1,22 @@
 # Analisi Arciere - Manuale d'Uso
 
+*Versione: 22*
+*Ultimo aggiornamento: 18 Dicembre 2025*
+
 ## Indice
 1. [Introduzione](#introduzione)
-2. [Requisiti](#requisiti)
-3. [Primo Avvio](#primo-avvio)
-4. [Interfaccia Principale](#interfaccia-principale)
-5. [Modalità Live](#modalità-live)
-6. [Registrazione Video](#registrazione-video)
-7. [Playback e Analisi](#playback-e-analisi)
-8. [Modelli AI](#modelli-ai)
-9. [Allineamenti](#allineamenti)
-10. [Modalità Schermo Intero](#modalità-schermo-intero)
-11. [Risoluzione Problemi](#risoluzione-problemi)
+2. [Installazione](#installazione)
+3. [Requisiti](#requisiti)
+4. [Primo Avvio](#primo-avvio)
+5. [Interfaccia Principale](#interfaccia-principale)
+6. [Modalità Live](#modalità-live)
+7. [Registrazione Video](#registrazione-video)
+8. [Playback e Analisi](#playback-e-analisi)
+9. [Modelli AI](#modelli-ai)
+10. [Allineamenti](#allineamenti)
+11. [Modalità Schermo Intero](#modalità-schermo-intero)
+12. [Archivio Club](#archivio-club)
+13. [Risoluzione Problemi](#risoluzione-problemi)
 
 ---
 
@@ -20,12 +25,30 @@
 **Analisi Arciere** è un'applicazione web per l'analisi della postura degli arcieri. Utilizza l'intelligenza artificiale per rilevare la posizione del corpo in tempo reale e fornire feedback sugli allineamenti chiave per migliorare la tecnica di tiro.
 
 ### Caratteristiche Principali
-- Rilevamento pose in tempo reale
+- Rilevamento pose in tempo reale con 5 modelli AI
 - Supporto per arco Olimpico, Compound e Nudo
+- **Funzionamento offline** dopo l'installazione
 - Registrazione e playback video
 - Analisi frame-by-frame
 - Overlay griglia personalizzabile
 - Modalità schermo intero con menu dedicato
+- Archivio video centralizzato nel club
+
+---
+
+## Installazione
+
+### Da Browser (Consigliato)
+1. Apri https://s4m4s.github.io/analisi-arciere/
+2. Clicca **"Installa Analisi Arciere"**
+3. Attendi il download dei dati offline (~50MB)
+4. L'icona apparirà nella schermata home
+
+### Uso Offline
+Dopo l'installazione, l'app funziona completamente offline:
+- Apri l'app dall'icona nella schermata home
+- Fotocamera e analisi AI funzionano senza internet
+- I video vengono salvati localmente
 
 ---
 
@@ -146,23 +169,31 @@ Quando visualizzi una registrazione:
 
 ## Modelli AI
 
-### MoveNet Thunder
+L'applicazione supporta 5 modelli AI diversi. Il modello **Holistic** è consigliato per la maggior compatibilità.
+
+### MediaPipe Holistic (Default - Consigliato)
 - **Precisione**: Alta
 - **Velocità**: Media
-- **Punti**: 17
-- **Consigliato per**: Analisi accurata
+- **Punti**: Corpo + Mani + Viso
+- **Consigliato per**: Tutti i dispositivi, migliore compatibilità
 
 ### MoveNet Lightning
 - **Precisione**: Media
 - **Velocità**: Alta
 - **Punti**: 17
-- **Consigliato per**: Dispositivi meno potenti
+- **Consigliato per**: Dispositivi medi
 
-### MediaPipe Holistic
-- **Precisione**: Alta
+### BlazePose UltraLight
+- **Precisione**: Bassa
+- **Velocità**: Molto alta
+- **Punti**: 33
+- **Consigliato per**: Telefoni vecchi/lenti
+
+### PoseNet
+- **Precisione**: Media
 - **Velocità**: Media
-- **Punti**: Corpo + Mani + Viso
-- **Consigliato per**: Analisi dettagliata delle mani
+- **Punti**: 17
+- **Consigliato per**: Alternativa leggera classica
 
 ### BodyPix
 - **Tipo**: Segmentazione
@@ -173,6 +204,8 @@ Quando visualizzi una registrazione:
 1. Vai nella sezione "Modello AI" nella sidebar
 2. Seleziona il modello desiderato
 3. Attendi il caricamento (schermata di loading)
+
+**Nota**: Se un modello non funziona sul tuo dispositivo, prova un altro. Holistic è il più compatibile.
 
 ---
 
@@ -266,10 +299,10 @@ In schermo intero, premi il pulsante ☰ in alto a destra per accedere a:
 
 Per segnalare problemi o richiedere nuove funzionalità, contatta il club:
 
-**Polisportiva Tiro con l'Arco**
+**Polisportiva Gonone Dorgali - Tiro con l'Arco**
 **Gonone - Dorgali**
 
 ---
 
-*Versione corrente: 17*
-*Ultimo aggiornamento: 14 Dicembre 2024*
+*Versione corrente: 18*
+*Ultimo aggiornamento: 15 Dicembre 2025*

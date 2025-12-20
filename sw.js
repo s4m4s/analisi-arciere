@@ -1,12 +1,13 @@
-// Analisi Arciere - Service Worker v21
+// Analisi Arciere - Service Worker v22
 // Polisportiva Gonone Dorgali - Tiro con l'Arco
 
-const CACHE_NAME = 'analisi-arciere-v21';
+const CACHE_NAME = 'analisi-arciere-v22';
 
 // File dell'app da cachare
 const APP_FILES = [
   './',
   './index.html',
+  './app.html',
   './manifest.json',
   './logo-pol.png',
   './v11.html',
@@ -19,7 +20,8 @@ const APP_FILES = [
   './v18.html',
   './v19.html',
   './v20.html',
-  './v21.html'
+  './v21.html',
+  './v22.html'
 ];
 
 // Librerie esterne da cachare
@@ -27,14 +29,16 @@ const EXTERNAL_LIBS = [
   'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs',
   'https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection',
   'https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix',
+  'https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet',
   'https://cdn.jsdelivr.net/npm/@mediapipe/holistic',
   'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils',
-  'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils'
+  'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils',
+  'https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap'
 ];
 
 // Install - cache tutti i file
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v20.2...');
+  console.log('[SW] Installing v22...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -42,20 +46,25 @@ self.addEventListener('install', (event) => {
         console.log('[SW] Caching app files...');
         
         // Cache app files
-        try {
-          await cache.addAll(APP_FILES);
-          console.log('[SW] App files cached');
-        } catch (err) {
-          console.error('[SW] Error caching app files:', err);
-        }
-        
-        // Cache external libs one by one (some might fail)
-        for (const url of EXTERNAL_LIBS) {
+        for (const url of APP_FILES) {
           try {
             await cache.add(url);
             console.log('[SW] Cached:', url);
           } catch (err) {
             console.warn('[SW] Could not cache:', url);
+          }
+        }
+        
+        // Cache external libs
+        for (const url of EXTERNAL_LIBS) {
+          try {
+            const response = await fetch(url, { mode: 'cors' });
+            if (response.ok) {
+              await cache.put(url, response);
+              console.log('[SW] Cached external:', url);
+            }
+          } catch (err) {
+            console.warn('[SW] Could not cache external:', url);
           }
         }
         
@@ -88,7 +97,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - strategia Cache First, poi Network
+// Fetch - Cache First strategy
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
@@ -97,7 +106,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // Skip API calls to local server (let them go to network)
+  // Skip API calls to local server
   if (url.pathname.startsWith('/api/') || url.hostname === '192.168.1.100') {
     return;
   }
@@ -111,7 +120,6 @@ self.addEventListener('fetch', (event) => {
     caches.match(event.request)
       .then((cachedResponse) => {
         if (cachedResponse) {
-          console.log('[SW] Serving from cache:', url.pathname || url.href);
           return cachedResponse;
         }
         
@@ -123,17 +131,17 @@ self.addEventListener('fetch', (event) => {
               return response;
             }
             
-            // Clone and cache the response
+            // Clone and cache dynamically loaded resources
             const responseToCache = response.clone();
             
             caches.open(CACHE_NAME)
               .then((cache) => {
-                // Cache TensorFlow model files dynamically
+                // Cache TensorFlow model files
                 if (url.href.includes('tfhub.dev') || 
                     url.href.includes('kaggle') ||
                     url.href.includes('storage.googleapis.com') ||
-                    url.href.includes('jsdelivr.net')) {
-                  console.log('[SW] Caching dynamically:', url.href);
+                    url.href.includes('jsdelivr.net') ||
+                    url.href.includes('mediapipe')) {
                   cache.put(event.request, responseToCache);
                 }
               });
@@ -141,25 +149,20 @@ self.addEventListener('fetch', (event) => {
             return response;
           })
           .catch((err) => {
-            console.error('[SW] Fetch failed:', url.href, err);
+            console.error('[SW] Fetch failed:', url.href);
             
-            // Return offline fallback for HTML pages
+            // Offline fallback for HTML pages
             if (event.request.headers.get('accept')?.includes('text/html')) {
-              return caches.match('./index.html');
+              return caches.match('./app.html');
             }
           });
       })
   );
 });
 
-// Listen for skip waiting message
+// Listen for messages
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
-  }
-  
-  // Force update check
-  if (event.data === 'checkUpdate') {
-    self.registration.update();
   }
 });
