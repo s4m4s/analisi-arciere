@@ -1,6 +1,28 @@
 # Analisi Arciere - Changelog
 
-## Versione 22 (Corrente)
+## Versione 23 (Corrente)
+**Data:** 20 Dicembre 2025
+
+### Fix Critici
+- **Scheletro OFF = AI OFF**: Quando disattivi la visualizzazione scheletro, l'AI si ferma completamente (FPS massimi)
+- **Fix Analisi Video (Infinity)**: I video analizzati ora mostrano correttamente lo scheletro durante il playback
+- **Fix Playback**: Separata logica showSkeleton live da playback analizzato
+
+### Modifiche Modelli
+- **Rimosso UltraLight** (BlazePose) - problemi compatibilità
+- **Rimosso PoseNet** - problemi compatibilità
+- **3 Modelli disponibili**: Holistic (default), Lightning, BodyPix
+
+### Modelli AI v23
+| Modello | Tipo | Note |
+|---------|------|------|
+| Holistic | MediaPipe | Consigliato, più compatibile |
+| Lightning | MoveNet | Veloce |
+| BodyPix | Segmentazione | Visualizza sagoma |
+
+---
+
+## Versione 22
 **Data:** 18 Dicembre 2025
 
 ### Nuove Funzionalità
@@ -8,19 +30,6 @@
 - **5 Modelli AI**: Holistic (default), Lightning, UltraLight, PoseNet, BodyPix
 - **Offline Completo**: Download di tutti i modelli AI durante installazione
 - **Holistic Default**: Modello più compatibile come default
-
-### Modifiche
-- Rimosso PIN atleti (accesso diretto)
-- Rimosso Thunder (problemi compatibilità)
-- Aggiunto PoseNet come alternativa leggera
-- Separato index.html (launcher) da app.html (applicazione)
-- Manifest aggiornato per avvio corretto da icona home
-
-### File Principali
-- `index.html` - Pagina launcher (versioni + installazione)
-- `app.html` - Applicazione principale v22
-- `sw.js` - Service Worker per offline
-- `manifest.json` - Configurazione PWA
 
 ---
 
