@@ -1310,6 +1310,71 @@
             color: white;
         }
         
+        /* Elaborazioni (sottoprodotti) */
+        .recording-group {
+            margin-bottom: 0.5rem;
+        }
+        
+        .elaborations-list {
+            margin-left: 1rem;
+            padding-left: 0.75rem;
+            border-left: 2px solid var(--border-color);
+            margin-top: 0.25rem;
+        }
+        
+        .elaboration-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+        }
+        
+        .elaboration-item:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .elaboration-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.75rem;
+            color: white;
+        }
+        
+        .elaboration-badge.model-holistic {
+            background: #9b59b6; /* viola */
+        }
+        
+        .elaboration-badge.model-lightning {
+            background: #f39c12; /* arancione */
+        }
+        
+        .elaboration-badge.model-bodypix {
+            background: #3498db; /* blu */
+        }
+        
+        .elaboration-icons {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+        }
+        
+        .elaboration-time {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            margin-left: auto;
+        }
+        
         /* Tips Panel */
         .tips-content {
             font-size: 0.9rem;
@@ -1968,7 +2033,7 @@
                 </ul>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 28 - Dicembre 2025</em>
+                    <em>Versione 29 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2516,6 +2581,7 @@
             analyzedFrames: {}, // cache frame analizzati
             recordings: [],
             currentRecording: null,
+            currentElaboration: null, // elaborazione corrente in visualizzazione
             currentFrame: 0,
             playbackSpeed: 0.5,
             fps: 0,
@@ -3754,12 +3820,36 @@
                 blob: blob,
                 url: URL.createObjectURL(blob),
                 hasSkeleton: hasSkeleton, // Salva se ha lo scheletro
-                analyzed: hasSkeleton, // Se ha scheletro, è già "analizzato"
-                frameData: null // Per salvare i dati dell'analisi frame per frame
+                analyzed: false, // Mai analizzato all'inizio
+                frameData: null, // Per salvare i dati dell'analisi frame per frame
+                elaborations: [] // Array di elaborazioni (sottoprodotti)
             };
             
             state.recordings.unshift(recording);
             updateRecordingsList();
+        }
+        
+        // Crea una nuova elaborazione come sottoprodotto
+        function createElaboration(parentRecording, model, frameData, settings) {
+            const modelLabels = { holistic: 'H', lightning: 'L', bodypix: 'B' };
+            const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
+            
+            const elaboration = {
+                id: Date.now(),
+                model: model,
+                modelLabel: modelLabels[model] || '?',
+                time: timestamp,
+                frameData: frameData,
+                settings: {
+                    showGrid: settings.showGrid,
+                    gridDensity: settings.gridDensity,
+                    showAlignments: settings.showAlignments
+                }
+            };
+            
+            parentRecording.elaborations.push(elaboration);
+            updateRecordingsList();
+            return elaboration;
         }
 
         function updateRecordingsList() {
@@ -3775,38 +3865,68 @@
                 return;
             }
             
-            elements.recordingsList.innerHTML = state.recordings.map(rec => `
-                <div class="recording-item" data-id="${rec.id}">
-                    <div class="recording-info">
-                        <span class="recording-name">${rec.name}</span>
-                        <span class="recording-meta">${rec.time} • ${rec.duration || '0:00'}</span>
-                        <input type="text" class="recording-comment" data-id="${rec.id}" 
-                               placeholder="Aggiungi nota..." 
-                               value="${rec.comment || ''}" 
-                               onclick="event.stopPropagation()">
+            // Genera HTML per ogni registrazione con le sue elaborazioni
+            const generateRecordingHTML = (rec) => {
+                // Genera HTML per le elaborazioni (sottoprodotti)
+                const elaborationsHTML = (rec.elaborations || []).map(elab => {
+                    const gridIcon = elab.settings?.showGrid ? '⊞' : '';
+                    const infoIcon = elab.settings?.showAlignments ? 'ℹ' : '';
+                    return `
+                        <div class="elaboration-item" data-rec-id="${rec.id}" data-elab-id="${elab.id}">
+                            <span class="elaboration-badge model-${elab.model}">${elab.modelLabel}</span>
+                            <span class="elaboration-icons">${gridIcon}${infoIcon}</span>
+                            <span class="elaboration-time">${elab.time}</span>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="recording-group">
+                        <div class="recording-item" data-id="${rec.id}">
+                            <div class="recording-info">
+                                <span class="recording-name">${rec.name}</span>
+                                <span class="recording-meta">${rec.time} • ${rec.duration || '0:00'}</span>
+                                <input type="text" class="recording-comment" data-id="${rec.id}" 
+                                       placeholder="Aggiungi nota..." 
+                                       value="${rec.comment || ''}" 
+                                       onclick="event.stopPropagation()">
+                            </div>
+                            <div class="recording-actions">
+                                <button class="recording-download" data-id="${rec.id}" title="Scarica">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                    </svg>
+                                </button>
+                                <button class="recording-delete" data-id="${rec.id}" title="Elimina">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        ${elaborationsHTML ? `<div class="elaborations-list">${elaborationsHTML}</div>` : ''}
                     </div>
-                    <div class="recording-actions">
-                        <button class="recording-download" data-id="${rec.id}" title="Scarica">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-                            </svg>
-                        </button>
-                        <button class="recording-delete" data-id="${rec.id}" title="Elimina">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
+                `;
+            };
             
-            // Add click listeners per visualizzare
+            elements.recordingsList.innerHTML = state.recordings.map(generateRecordingHTML).join('');
+            
+            // Add click listeners per visualizzare registrazione originale
             elements.recordingsList.querySelectorAll('.recording-item').forEach(item => {
                 item.addEventListener('click', (e) => {
                     if (!e.target.closest('.recording-delete') && !e.target.closest('.recording-download') && !e.target.closest('.recording-comment')) {
                         const id = parseInt(item.dataset.id);
                         playRecording(id);
                     }
+                });
+            });
+            
+            // Add click listeners per visualizzare elaborazione
+            elements.recordingsList.querySelectorAll('.elaboration-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const recId = parseInt(item.dataset.recId);
+                    const elabId = parseInt(item.dataset.elabId);
+                    playElaboration(recId, elabId);
                 });
             });
             
@@ -3840,6 +3960,47 @@
             });
         }
         
+        // Riproduce un'elaborazione specifica
+        function playElaboration(recId, elabId) {
+            const recording = state.recordings.find(r => r.id === recId);
+            if (!recording) return;
+            
+            const elaboration = recording.elaborations.find(e => e.id === elabId);
+            if (!elaboration) return;
+            
+            // Imposta il video
+            elements.playbackVideo.src = recording.url;
+            state.isPlayback = true;
+            state.currentRecording = recording;
+            
+            // Carica i dati dell'elaborazione
+            state.analyzedFrames = elaboration.frameData;
+            state.currentElaboration = elaboration;
+            
+            // Applica le impostazioni salvate
+            if (elaboration.settings) {
+                state.showGrid = elaboration.settings.showGrid;
+                state.gridDensity = elaboration.settings.gridDensity;
+                state.showAlignments = elaboration.settings.showAlignments;
+                
+                // Aggiorna UI
+                document.getElementById('gridDensitySelect').value = elaboration.settings.gridDensity;
+                document.getElementById('anglesOverlay').style.display = elaboration.settings.showAlignments ? 'flex' : 'none';
+            }
+            
+            elements.videoElement.style.display = 'none';
+            elements.playbackVideo.style.display = 'block';
+            elements.playbackControls.style.display = 'flex';
+            
+            elements.playbackVideo.playbackRate = state.playbackSpeed;
+            elements.modeText.textContent = `Elab. ${elaboration.modelLabel}`;
+            
+            elements.playbackVideo.onloadedmetadata = () => {
+                updateFrameCounter();
+                detectPlaybackPose();
+            };
+        }
+        
         function downloadRecording(id) {
             const recording = state.recordings.find(r => r.id === id);
             if (!recording) return;
@@ -3860,13 +4021,8 @@
             state.currentRecording = recording;
             state.isPlayback = true;
             state.currentFrame = 0;
-            
-            // Carica i frame analizzati se esistono
-            if (recording.frameData) {
-                state.analyzedFrames = recording.frameData;
-            } else {
-                state.analyzedFrames = {};
-            }
+            state.currentElaboration = null; // Reset elaborazione corrente
+            state.analyzedFrames = {}; // Reset frame analizzati (visualizza originale)
             
             elements.video.style.display = 'none';
             elements.playbackVideo.style.display = 'block';
@@ -3877,19 +4033,13 @@
             elements.playbackControls.classList.add('active');
             
             elements.modeIndicator.classList.add('playback');
-            elements.modeText.textContent = 'Playback';
+            elements.modeText.textContent = 'Originale';
             
-            // Gestisci pulsante Analizza
+            // Mostra sempre il pulsante Analizza (ora crea sottoprodotti)
             const analyzeBtn = document.getElementById('analyzeBtn');
-            if (recording.hasSkeleton || recording.analyzed) {
-                // Già ha scheletro o è stata analizzata
-                analyzeBtn.style.display = 'none';
-            } else {
-                // Mostra pulsante per analizzare
-                analyzeBtn.style.display = 'flex';
-                analyzeBtn.classList.remove('analyzing', 'done');
-                analyzeBtn.querySelector('.analyze-text').textContent = 'AI';
-            }
+            analyzeBtn.style.display = 'flex';
+            analyzeBtn.classList.remove('analyzing', 'done');
+            analyzeBtn.querySelector('.analyze-text').textContent = 'AI';
             
             elements.playbackVideo.onloadedmetadata = () => {
                 elements.canvas.width = elements.playbackVideo.videoWidth;
@@ -3901,10 +4051,10 @@
             
             // Start playback rendering
             if (recording.hasSkeleton) {
-                // Video già con scheletro, mostra direttamente
+                // Video già con scheletro integrato, mostra direttamente
                 renderPlaybackWithSkeleton();
             } else {
-                // Video senza scheletro, usa detectPlaybackPose
+                // Video senza scheletro
                 detectPlaybackPose();
             }
         }
@@ -4184,10 +4334,9 @@
                 return;
             }
             
-            // Se già analizzata o ha scheletro, non serve
-            if (currentRecording.analyzed || currentRecording.hasSkeleton) {
-                alert('Questa registrazione è già stata analizzata');
-                return;
+            // Se la registrazione ha già lo scheletro integrato nel video, avvisa
+            if (currentRecording.hasSkeleton) {
+                alert('Questa registrazione ha già lo scheletro nel video. L\'analisi aggiungerà comunque una nuova elaborazione.');
             }
             
             const analyzeBtn = document.getElementById('analyzeBtn');
@@ -4354,18 +4503,28 @@
             
             console.log('Analisi completata. Frame analizzati:', Object.keys(frameData).length);
             
-            // Salva i dati nella registrazione
-            currentRecording.frameData = frameData;
-            currentRecording.analyzed = true;
+            // Crea elaborazione come sottoprodotto (non modifica l'originale)
+            const elaboration = createElaboration(currentRecording, analysisModel, frameData, {
+                showGrid: state.showGrid,
+                gridDensity: state.gridDensity,
+                showAlignments: state.showAlignments
+            });
             
             // Salva anche nello state per il playback corrente
             state.analyzedFrames = frameData;
+            state.currentElaboration = elaboration;
             
             video.currentTime = originalTime;
             state.isAnalyzing = false;
             analyzeBtn.classList.remove('analyzing');
             analyzeBtn.classList.add('done');
-            analyzeBtn.querySelector('.analyze-text').textContent = '✓';
+            
+            // Mostra quale modello è stato usato
+            const modelLabels = { holistic: 'H', lightning: 'L', bodypix: 'B' };
+            analyzeBtn.querySelector('.analyze-text').textContent = modelLabels[analysisModel] || '✓';
+            
+            // Aggiorna indicatore modalità
+            elements.modeText.textContent = `Elab. ${modelLabels[analysisModel]}`;
             
             // Forza refresh del frame corrente con i nuovi dati
             if (state.analyzedFrames && Object.keys(state.analyzedFrames).length > 0) {
@@ -4950,10 +5109,11 @@
                         elements.gridBtn.style.background = '';
                     } else {
                         state.showGrid = true;
-                        state.gridRows = density;
-                        state.gridCols = density;
+                        state.gridDensity = density; // Usa gridDensity come nel live
                         playbackGridBtn.style.background = 'var(--accent-current)';
                         elements.gridBtn.style.background = 'var(--accent-current)';
+                        // Sincronizza select nel live
+                        document.getElementById('gridDensitySelect').value = density;
                     }
                     
                     // Aggiorna active state
