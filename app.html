@@ -3834,6 +3834,11 @@
             const modelLabels = { holistic: 'H', lightning: 'L', bodypix: 'B' };
             const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             
+            // Assicurati che elaborations esista
+            if (!parentRecording.elaborations) {
+                parentRecording.elaborations = [];
+            }
+            
             const elaboration = {
                 id: Date.now(),
                 model: model,
@@ -3965,13 +3970,14 @@
             const recording = state.recordings.find(r => r.id === recId);
             if (!recording) return;
             
-            const elaboration = recording.elaborations.find(e => e.id === elabId);
+            const elaboration = (recording.elaborations || []).find(e => e.id === elabId);
             if (!elaboration) return;
             
             // Imposta il video
             elements.playbackVideo.src = recording.url;
             state.isPlayback = true;
             state.currentRecording = recording;
+            state.currentFrame = 0;
             
             // Carica i dati dell'elaborazione
             state.analyzedFrames = elaboration.frameData;
@@ -3988,17 +3994,29 @@
                 document.getElementById('anglesOverlay').style.display = elaboration.settings.showAlignments ? 'flex' : 'none';
             }
             
-            elements.videoElement.style.display = 'none';
+            elements.video.style.display = 'none';
             elements.playbackVideo.style.display = 'block';
-            elements.playbackControls.style.display = 'flex';
+            elements.liveControls.style.display = 'none';
+            elements.playbackControls.classList.add('active');
             
+            elements.modeIndicator.classList.add('playback');
             elements.playbackVideo.playbackRate = state.playbackSpeed;
             elements.modeText.textContent = `Elab. ${elaboration.modelLabel}`;
             
+            // Nascondi pulsante AI (già elaborato)
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.classList.remove('analyzing', 'done');
+            analyzeBtn.querySelector('.analyze-text').textContent = elaboration.modelLabel;
+            analyzeBtn.classList.add('done');
+            
             elements.playbackVideo.onloadedmetadata = () => {
-                updateFrameCounter();
+                elements.canvas.width = elements.playbackVideo.videoWidth;
+                elements.canvas.height = elements.playbackVideo.videoHeight;
+                updatePlaybackUI();
                 detectPlaybackPose();
             };
+            
+            elements.playbackVideo.ontimeupdate = updatePlaybackUI;
         }
         
         function downloadRecording(id) {
