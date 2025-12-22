@@ -919,6 +919,59 @@
             border-color: var(--accent-current);
         }
         
+        /* Grid Menu con Dropdown */
+        .grid-menu {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .grid-dropdown {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            min-width: 80px;
+            z-index: 100;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        
+        .grid-dropdown.show {
+            display: block;
+        }
+        
+        .grid-option {
+            display: block;
+            width: 100%;
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.8rem;
+            font-family: 'Oswald', sans-serif;
+            cursor: pointer;
+            margin-bottom: 0.25rem;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .grid-option:hover,
+        .grid-option.active {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .grid-option:last-child {
+            margin-bottom: 0;
+        }
+        
         .speed-btn {
             padding: 0.4rem 0.8rem;
             background: var(--bg-secondary);
@@ -1179,6 +1232,7 @@
             display: flex;
             flex-direction: column;
             gap: 0.2rem;
+            flex: 1;
         }
         
         .recording-name {
@@ -1189,6 +1243,28 @@
         .recording-meta {
             font-size: 0.75rem;
             color: var(--text-muted);
+        }
+        
+        .recording-comment {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            background: transparent;
+            border: none;
+            border-bottom: 1px dashed var(--border-color);
+            padding: 0.2rem 0;
+            margin-top: 0.2rem;
+            width: 100%;
+            font-style: italic;
+        }
+        
+        .recording-comment:focus {
+            outline: none;
+            border-bottom-color: var(--accent-current);
+        }
+        
+        .recording-comment::placeholder {
+            color: var(--text-muted);
+            font-style: italic;
         }
         
         .recording-delete {
@@ -1892,7 +1968,7 @@
                 </ul>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 27 - Dicembre 2025</em>
+                    <em>Versione 28 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2081,13 +2157,6 @@
                 <circle cx="12" cy="12" r="10"/>
                 <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
                 <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-        </button>
-        
-        <button class="help-btn" id="versionBtn" title="Storico versioni">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <polyline points="12 6 12 12 16 14"/>
             </svg>
         </button>
     </header>
@@ -2286,16 +2355,26 @@
                         </svg>
                     </button>
                     
-                    <!-- Pulsante Griglia Playback -->
-                    <button class="control-btn" id="playbackGridBtn" title="Mostra/Nascondi griglia">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2"/>
-                            <line x1="3" y1="9" x2="21" y2="9"/>
-                            <line x1="3" y1="15" x2="21" y2="15"/>
-                            <line x1="9" y1="3" x2="9" y2="21"/>
-                            <line x1="15" y1="3" x2="15" y2="21"/>
-                        </svg>
-                    </button>
+                    <!-- Menu Griglia Playback con dropdown -->
+                    <div class="grid-menu" id="gridMenu">
+                        <button class="control-btn" id="playbackGridBtn" title="Griglia">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <line x1="3" y1="9" x2="21" y2="9"/>
+                                <line x1="3" y1="15" x2="21" y2="15"/>
+                                <line x1="9" y1="3" x2="9" y2="21"/>
+                                <line x1="15" y1="3" x2="15" y2="21"/>
+                            </svg>
+                        </button>
+                        <div class="grid-dropdown" id="gridDropdown">
+                            <button class="grid-option" data-density="0">OFF</button>
+                            <button class="grid-option" data-density="8">8×8</button>
+                            <button class="grid-option active" data-density="16">16×16</button>
+                            <button class="grid-option" data-density="24">24×24</button>
+                            <button class="grid-option" data-density="32">32×32</button>
+                            <button class="grid-option" data-density="48">48×48</button>
+                        </div>
+                    </div>
                     
                     <button class="control-btn" id="framePrevBtn" title="Frame precedente">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2334,14 +2413,6 @@
                             <button class="analyze-option" data-model="lightning">Lightning</button>
                             <button class="analyze-option" data-model="bodypix">BodyPix</button>
                         </div>
-                    </div>
-                    
-                    <!-- Controlli Griglia Playback -->
-                    <div class="playback-grid-controls" id="playbackGridControls">
-                        <button class="grid-density-btn" data-density="3">3×3</button>
-                        <button class="grid-density-btn" data-density="8">8×8</button>
-                        <button class="grid-density-btn active" data-density="16">16×16</button>
-                        <button class="grid-density-btn" data-density="32">32×32</button>
                     </div>
                     
                     <div class="speed-control">
@@ -3614,9 +3685,11 @@
         let mediaRecorder;
         let recordedChunks = [];
         let recordingHasSkeleton = false; // Flag per sapere se la registrazione ha lo scheletro
+        let recordingStartTime = 0; // Tempo inizio registrazione
 
         function startRecording() {
             recordedChunks = [];
+            recordingStartTime = Date.now(); // Salva tempo inizio
             
             // Registra lo scheletro se è attivo al momento della registrazione
             recordingHasSkeleton = state.showSkeleton;
@@ -3639,7 +3712,8 @@
             
             mediaRecorder.onstop = () => {
                 const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                saveRecording(blob, recordingHasSkeleton);
+                const duration = Math.round((Date.now() - recordingStartTime) / 1000); // durata in secondi
+                saveRecording(blob, recordingHasSkeleton, duration);
             };
             
             mediaRecorder.start(100);
@@ -3661,15 +3735,22 @@
             }
         }
 
-        function saveRecording(blob, hasSkeleton) {
+        function saveRecording(blob, hasSkeleton, duration) {
             const athleteName = currentAthlete ? currentAthlete.name : 'Atleta';
             const timestamp = new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' });
             const bowType = state.bowType.charAt(0).toUpperCase() + state.bowType.slice(1);
+            
+            // Formatta durata (mm:ss)
+            const mins = Math.floor(duration / 60);
+            const secs = duration % 60;
+            const durationStr = `${mins}:${secs.toString().padStart(2, '0')}`;
             
             const recording = {
                 id: Date.now(),
                 name: `${athleteName} - ${bowType}`,
                 time: timestamp,
+                duration: durationStr,
+                comment: '', // Commento vuoto inizialmente
                 blob: blob,
                 url: URL.createObjectURL(blob),
                 hasSkeleton: hasSkeleton, // Salva se ha lo scheletro
@@ -3698,7 +3779,11 @@
                 <div class="recording-item" data-id="${rec.id}">
                     <div class="recording-info">
                         <span class="recording-name">${rec.name}</span>
-                        <span class="recording-meta">${rec.time}</span>
+                        <span class="recording-meta">${rec.time} • ${rec.duration || '0:00'}</span>
+                        <input type="text" class="recording-comment" data-id="${rec.id}" 
+                               placeholder="Aggiungi nota..." 
+                               value="${rec.comment || ''}" 
+                               onclick="event.stopPropagation()">
                     </div>
                     <div class="recording-actions">
                         <button class="recording-download" data-id="${rec.id}" title="Scarica">
@@ -3718,9 +3803,20 @@
             // Add click listeners per visualizzare
             elements.recordingsList.querySelectorAll('.recording-item').forEach(item => {
                 item.addEventListener('click', (e) => {
-                    if (!e.target.closest('.recording-delete') && !e.target.closest('.recording-download')) {
+                    if (!e.target.closest('.recording-delete') && !e.target.closest('.recording-download') && !e.target.closest('.recording-comment')) {
                         const id = parseInt(item.dataset.id);
                         playRecording(id);
+                    }
+                });
+            });
+            
+            // Add listeners per commenti
+            elements.recordingsList.querySelectorAll('.recording-comment').forEach(input => {
+                input.addEventListener('change', (e) => {
+                    const id = parseInt(input.dataset.id);
+                    const rec = state.recordings.find(r => r.id === id);
+                    if (rec) {
+                        rec.comment = input.value;
                     }
                 });
             });
@@ -4830,28 +4926,46 @@
             // Playback controls
             elements.backToLiveBtn.addEventListener('click', backToLive);
             
-            // Pulsante Griglia Playback (on/off)
+            // Menu Griglia Playback - mostra dropdown al click
             const playbackGridBtn = document.getElementById('playbackGridBtn');
+            const gridDropdown = document.getElementById('gridDropdown');
             
-            playbackGridBtn.addEventListener('click', () => {
-                state.showGrid = !state.showGrid;
-                playbackGridBtn.style.background = state.showGrid ? 'var(--accent-current)' : '';
-                elements.gridBtn.style.background = state.showGrid ? 'var(--accent-current)' : '';
+            playbackGridBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                gridDropdown.classList.toggle('show');
+                // Chiudi dropdown analisi se aperto
+                document.getElementById('analyzeDropdown').classList.remove('show');
             });
             
-            // Pulsanti densità griglia playback
-            document.querySelectorAll('.grid-density-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
+            // Opzioni griglia
+            document.querySelectorAll('.grid-option').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
                     const density = parseInt(btn.dataset.density);
-                    state.gridRows = density;
-                    state.gridCols = density;
+                    
+                    if (density === 0) {
+                        // OFF
+                        state.showGrid = false;
+                        playbackGridBtn.style.background = '';
+                        elements.gridBtn.style.background = '';
+                    } else {
+                        state.showGrid = true;
+                        state.gridRows = density;
+                        state.gridCols = density;
+                        playbackGridBtn.style.background = 'var(--accent-current)';
+                        elements.gridBtn.style.background = 'var(--accent-current)';
+                    }
+                    
                     // Aggiorna active state
-                    document.querySelectorAll('.grid-density-btn').forEach(b => b.classList.remove('active'));
+                    document.querySelectorAll('.grid-option').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
+                    
                     // Sincronizza con fs-grid-density
                     document.querySelectorAll('.fs-grid-density').forEach(b => {
                         b.classList.toggle('active', parseInt(b.dataset.density) === density);
                     });
+                    
+                    gridDropdown.classList.remove('show');
                 });
             });
             
@@ -4862,6 +4976,8 @@
             analyzeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 analyzeDropdown.classList.toggle('show');
+                // Chiudi dropdown griglia se aperto
+                gridDropdown.classList.remove('show');
             });
             
             // Opzioni analisi
@@ -4877,6 +4993,7 @@
             // Chiudi dropdown cliccando fuori
             document.addEventListener('click', () => {
                 analyzeDropdown.classList.remove('show');
+                gridDropdown.classList.remove('show');
             });
             
             elements.playPauseBtn.addEventListener('click', () => {
@@ -5213,6 +5330,10 @@
         // Initialize skeleton button as active
         document.addEventListener('DOMContentLoaded', () => {
             elements.skeletonBtn.style.background = bowConfig[state.bowType].color;
+            
+            // Inizializza pulsante allineamenti con stato corretto
+            document.getElementById('alignmentsBtn').style.background = state.showAlignments ? 
+                bowConfig[state.bowType].color : '';
             
             // Update current athlete display
             if (currentAthlete) {

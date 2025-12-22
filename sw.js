@@ -1,7 +1,7 @@
-// Analisi Arciere - Service Worker v27
+// Analisi Arciere - Service Worker v28
 // Polisportiva Gonone Dorgali - Tiro con l'Arco
 
-const CACHE_NAME = 'analisi-arciere-v27';
+const CACHE_NAME = 'analisi-arciere-v28';
 
 // File dell'app da cachare
 const APP_FILES = [
@@ -9,24 +9,7 @@ const APP_FILES = [
   './index.html',
   './app.html',
   './manifest.json',
-  './logo-pol.png',
-  './v11.html',
-  './v12.html',
-  './v13.html',
-  './v14.html',
-  './v15.html',
-  './v16.html',
-  './v17.html',
-  './v18.html',
-  './v19.html',
-  './v20.html',
-  './v21.html',
-  './v22.html',
-  './v23.html',
-  './v24.html',
-  './v25.html',
-  './v26.html',
-  './v27.html'
+  './logo-pol.png'
 ];
 
 // Librerie esterne da cachare

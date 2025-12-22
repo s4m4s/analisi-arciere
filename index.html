@@ -2,540 +2,311 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analisi Arciere - Polisportiva Gonone Dorgali</title>
-    
-    <!-- PWA Meta Tags -->
-    <meta name="description" content="Analisi postura arcieri con AI - Polisportiva Gonone Dorgali">
-    <meta name="theme-color" content="#2563eb">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="logo-pol.png">
+    <link rel="apple-touch-icon" href="logo-pol.png">
+    <meta name="theme-color" content="#1a1a2e">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Analisi Arciere">
-    <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="logo-pol.png">
-    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600;700&family=Source+Sans+Pro:wght@300;400;600&display=swap');
-        
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
         
-        :root {
-            --bg-primary: #0a0a0b;
-            --bg-secondary: #141416;
-            --bg-tertiary: #1c1c1f;
-            --accent-color: #2563eb;
-            --text-primary: #ffffff;
-            --text-secondary: #a1a1aa;
-            --text-muted: #71717a;
-            --border-color: #27272a;
-            --success: #22c55e;
-        }
-        
         body {
-            font-family: 'Source Sans Pro', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 2rem 1rem;
+            justify-content: center;
+            padding: 2rem;
+            color: white;
         }
         
         .container {
-            max-width: 500px;
-            width: 100%;
-        }
-        
-        .header {
             text-align: center;
-            margin-bottom: 2rem;
+            max-width: 400px;
+            width: 100%;
         }
         
         .logo {
             width: 120px;
             height: 120px;
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: 24px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
         }
         
-        .title {
-            font-family: 'Oswald', sans-serif;
+        h1 {
             font-size: 1.8rem;
-            font-weight: 600;
-            letter-spacing: 2px;
             margin-bottom: 0.5rem;
+            font-weight: 600;
         }
         
         .subtitle {
-            color: var(--text-secondary);
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 2.5rem;
             font-size: 0.95rem;
         }
         
-        /* Install Section */
-        .install-section {
-            background: var(--bg-secondary);
-            border: 2px solid var(--accent-color);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .install-section.hidden {
-            display: none;
-        }
-        
-        .install-title {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .install-desc {
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
-        
-        .install-btn {
-            width: 100%;
-            padding: 1rem;
-            background: var(--accent-color);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.1rem;
-            letter-spacing: 1px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        
-        .install-btn:hover {
-            filter: brightness(1.1);
-        }
-        
-        .install-btn:disabled {
-            background: var(--bg-tertiary);
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
-        
-        .installed-badge {
-            display: none;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 1rem;
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid var(--success);
-            border-radius: 10px;
-            color: var(--success);
-            font-weight: 500;
-        }
-        
-        .installed-badge.show {
-            display: flex;
-        }
-        
-        /* Download Progress */
-        .download-section {
-            display: none;
-            margin-top: 1rem;
-        }
-        
-        .download-section.active {
-            display: block;
-        }
-        
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: var(--bg-tertiary);
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 0.5rem;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--accent-color);
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-        
-        .progress-text {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            text-align: center;
-        }
-        
-        /* Versions Section */
-        .versions-section {
-            background: var(--bg-secondary);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        
-        .section-title {
-            font-family: 'Oswald', sans-serif;
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .versions-list {
+        .options {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            max-height: 300px;
-            overflow-y: auto;
+            gap: 1rem;
         }
         
-        .version-item {
+        .option-btn {
             display: flex;
             align-items: center;
             gap: 1rem;
-            padding: 0.75rem 1rem;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            text-decoration: none;
-            color: var(--text-primary);
-            transition: all 0.2s ease;
-        }
-        
-        .version-item:hover {
-            background: var(--bg-primary);
-            border-color: var(--accent-color);
-        }
-        
-        .version-item.current {
-            border-color: var(--accent-color);
-            background: rgba(37, 99, 235, 0.1);
-        }
-        
-        .version-badge {
-            font-family: 'Oswald', sans-serif;
-            font-size: 0.85rem;
-            font-weight: 600;
-            padding: 0.3rem 0.6rem;
-            background: var(--bg-secondary);
-            border-radius: 6px;
-            min-width: 45px;
-            text-align: center;
-        }
-        
-        .version-item.current .version-badge {
-            background: var(--accent-color);
+            padding: 1.25rem 1.5rem;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 16px;
             color: white;
-        }
-        
-        .version-info {
-            display: flex;
-            flex-direction: column;
-            gap: 0.15rem;
-        }
-        
-        .version-name {
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-        
-        .version-desc {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-        }
-        
-        /* Try without install */
-        .try-link {
-            display: block;
-            text-align: center;
-            color: var(--text-secondary);
-            font-size: 0.9rem;
-            margin-top: 1rem;
             text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
         }
         
-        .try-link:hover {
-            color: var(--accent-color);
+        .option-btn:hover {
+            background: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.4);
+            transform: translateY(-2px);
         }
         
-        /* Footer */
+        .option-btn.primary {
+            background: linear-gradient(135deg, #e94560 0%, #ff6b6b 100%);
+            border-color: transparent;
+        }
+        
+        .option-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(233, 69, 96, 0.4);
+        }
+        
+        .option-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .option-btn.primary .option-icon {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        .option-icon svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .option-text {
+            text-align: left;
+        }
+        
+        .option-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+        
+        .option-desc {
+            font-size: 0.8rem;
+            opacity: 0.8;
+        }
+        
         .footer {
-            margin-top: auto;
-            padding-top: 2rem;
+            margin-top: 3rem;
             text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
+            opacity: 0.5;
+            font-size: 0.8rem;
         }
         
-        /* Status messages */
-        .status-message {
-            padding: 0.75rem 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
+        .install-prompt {
             display: none;
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #16213e;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 100;
+            max-width: 90%;
         }
         
-        .status-message.show {
+        .install-prompt.show {
             display: block;
+            animation: slideUp 0.3s ease;
         }
         
-        .status-message.error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid #ef4444;
-            color: #ef4444;
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
         
-        .status-message.success {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid #22c55e;
-            color: #22c55e;
+        .install-prompt-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
         
-        .status-message.info {
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid #2563eb;
-            color: #60a5fa;
+        .install-prompt-text {
+            font-size: 0.9rem;
+        }
+        
+        .install-prompt-btn {
+            background: #e94560;
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .install-prompt-close {
+            background: transparent;
+            border: none;
+            color: rgba(255,255,255,0.5);
+            cursor: pointer;
+            padding: 0.5rem;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <header class="header">
-            <img src="logo-pol.png" alt="Logo Polisportiva" class="logo">
-            <h1 class="title">ANALISI ARCIERE</h1>
-            <p class="subtitle">Polisportiva Gonone Dorgali - Tiro con l'Arco</p>
-        </header>
+        <img src="logo-pol.png" alt="Logo Polisportiva" class="logo">
+        <h1>Analisi Arciere</h1>
+        <p class="subtitle">Polisportiva Gonone Dorgali - Tiro con l'Arco</p>
         
-        <div id="statusMessage" class="status-message"></div>
-        
-        <!-- Install Section -->
-        <section class="install-section" id="installSection">
-            <div class="install-title">📲 Installa l'App</div>
-            <p class="install-desc">
-                Installa l'app per usarla offline, anche senza connessione internet. 
-                Funziona con fotocamera e analisi AI direttamente sul tuo dispositivo.
-            </p>
-            <button class="install-btn" id="installBtn">Installa Analisi Arciere</button>
-            <div class="installed-badge" id="installedBadge">
-                ✓ App installata - Apri dalla schermata home
-            </div>
-            
-            <div class="download-section" id="downloadSection">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill"></div>
+        <div class="options">
+            <a href="app.html" class="option-btn primary">
+                <div class="option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
                 </div>
-                <div class="progress-text" id="progressText">Preparazione download...</div>
-            </div>
-        </section>
-        
-        <!-- Versions Section -->
-        <section class="versions-section">
-            <div class="section-title">Versioni Disponibili</div>
-            <div class="versions-list">
-                <a href="app.html" class="version-item current">
-                    <span class="version-badge">v27</span>
-                    <span class="version-info">
-                        <span class="version-name">Corrente</span>
-                        <span class="version-desc">Holistic identico live/playback</span>
-                    </span>
-                </a>
-                <a href="v26.html" class="version-item">
-                    <span class="version-badge">v26</span>
-                    <span class="version-info">
-                        <span class="version-name">Holistic mani+faccia</span>
-                        <span class="version-desc">Griglia regolabile</span>
-                    </span>
-                </a>
-                <a href="v25.html" class="version-item">
-                    <span class="version-badge">v22</span>
-                    <span class="version-info">
-                        <span class="version-name">5 Modelli AI</span>
-                        <span class="version-desc">Holistic default</span>
-                    </span>
-                </a>
-                <a href="v21.html" class="version-item">
-                    <span class="version-badge">v21</span>
-                    <span class="version-info">
-                        <span class="version-name">UltraLight Default</span>
-                        <span class="version-desc">BlazePose Lite per telefoni vecchi</span>
-                    </span>
-                </a>
-                <a href="v20.html" class="version-item">
-                    <span class="version-badge">v20</span>
-                    <span class="version-info">
-                        <span class="version-name">PWA</span>
-                        <span class="version-desc">Prima versione installabile</span>
-                    </span>
-                </a>
-                <a href="v19.html" class="version-item">
-                    <span class="version-badge">v19</span>
-                    <span class="version-info">
-                        <span class="version-name">Registrazione Canvas</span>
-                        <span class="version-desc">Analisi frame per frame</span>
-                    </span>
-                </a>
-                <a href="v18.html" class="version-item">
-                    <span class="version-badge">v18</span>
-                    <span class="version-info">
-                        <span class="version-name">Atleti & Config</span>
-                        <span class="version-desc">Gestione atleti, parametri angoli</span>
-                    </span>
-                </a>
-                <a href="v17.html" class="version-item">
-                    <span class="version-badge">v17</span>
-                    <span class="version-info">
-                        <span class="version-name">Fullscreen</span>
-                        <span class="version-desc">Menu hamburger, mobile</span>
-                    </span>
-                </a>
-            </div>
+                <div class="option-text">
+                    <div class="option-title">Avvia App</div>
+                    <div class="option-desc">Usa online nel browser</div>
+                </div>
+            </a>
             
-            <a href="app.html" class="try-link">→ Usa senza installare (richiede connessione)</a>
-        </section>
+            <button class="option-btn" id="installBtn" style="display: none;">
+                <div class="option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                </div>
+                <div class="option-text">
+                    <div class="option-title">Installa App</div>
+                    <div class="option-desc">Usa offline sul dispositivo</div>
+                </div>
+            </button>
+            
+            <div class="option-btn" id="installedInfo" style="display: none;">
+                <div class="option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <div class="option-text">
+                    <div class="option-title">App Installata</div>
+                    <div class="option-desc">Puoi usarla anche offline</div>
+                </div>
+            </div>
+        </div>
         
-        <footer class="footer">
-            <p>Versione 27 - Dicembre 2025</p>
-            <p>Polisportiva Gonone Dorgali</p>
-        </footer>
+        <div class="footer">
+            <p>Versione 28 - Dicembre 2025</p>
+        </div>
+    </div>
+    
+    <div class="install-prompt" id="installPrompt">
+        <div class="install-prompt-content">
+            <span class="install-prompt-text">Installa l'app per usarla offline</span>
+            <button class="install-prompt-btn" id="installPromptBtn">Installa</button>
+            <button class="install-prompt-close" id="installPromptClose">✕</button>
+        </div>
     </div>
     
     <script>
-        // PWA Installation
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+                .then(reg => console.log('SW registered'))
+                .catch(err => console.log('SW registration failed', err));
+        }
+        
+        // PWA Install
         let deferredPrompt;
         const installBtn = document.getElementById('installBtn');
-        const installSection = document.getElementById('installSection');
-        const installedBadge = document.getElementById('installedBadge');
-        const downloadSection = document.getElementById('downloadSection');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const statusMessage = document.getElementById('statusMessage');
+        const installedInfo = document.getElementById('installedInfo');
+        const installPrompt = document.getElementById('installPrompt');
         
-        // Check if running as installed app
-        function isInstalledApp() {
-            return window.matchMedia('(display-mode: standalone)').matches || 
-                   window.navigator.standalone === true;
+        // Check if already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            installedInfo.style.display = 'flex';
         }
         
-        // If running as installed app, redirect to main app
-        if (isInstalledApp()) {
-            window.location.href = 'app.html';
-        }
-        
-        // Check if was previously installed
-        if (localStorage.getItem('appInstalled') === 'true') {
-            showStatus('App già installata. Apri dalla schermata home per usarla offline.', 'info');
-        }
-        
-        // Listen for install prompt
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            installBtn.disabled = false;
-            installBtn.textContent = 'Installa Analisi Arciere';
+            installBtn.style.display = 'flex';
+            
+            // Show prompt after 3 seconds
+            setTimeout(() => {
+                if (deferredPrompt) {
+                    installPrompt.classList.add('show');
+                }
+            }, 3000);
         });
         
-        // Install button click
         installBtn.addEventListener('click', async () => {
-            if (!deferredPrompt) {
-                // Show manual instructions
-                showStatus('Per installare: apri il menu del browser (⋮) e seleziona "Aggiungi a schermata Home"', 'info');
-                return;
-            }
-            
-            installBtn.disabled = true;
-            installBtn.textContent = 'Installazione...';
+            if (!deferredPrompt) return;
             
             deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             
             if (outcome === 'accepted') {
-                showStatus('Installazione in corso... Attendi il download dei dati offline.', 'success');
-                downloadSection.classList.add('active');
-                
-                // Start caching all resources
-                await cacheAllResources();
-                
-                localStorage.setItem('appInstalled', 'true');
                 installBtn.style.display = 'none';
-                installedBadge.classList.add('show');
-            } else {
-                installBtn.disabled = false;
-                installBtn.textContent = 'Installa Analisi Arciere';
+                installedInfo.style.display = 'flex';
             }
-            
+            deferredPrompt = null;
+            installPrompt.classList.remove('show');
+        });
+        
+        document.getElementById('installPromptBtn').addEventListener('click', () => {
+            installBtn.click();
+        });
+        
+        document.getElementById('installPromptClose').addEventListener('click', () => {
+            installPrompt.classList.remove('show');
+        });
+        
+        window.addEventListener('appinstalled', () => {
+            installBtn.style.display = 'none';
+            installedInfo.style.display = 'flex';
+            installPrompt.classList.remove('show');
             deferredPrompt = null;
         });
-        
-        // App installed event
-        window.addEventListener('appinstalled', () => {
-            localStorage.setItem('appInstalled', 'true');
-            installBtn.style.display = 'none';
-            installedBadge.classList.add('show');
-            showStatus('App installata con successo! Apri dalla schermata home.', 'success');
-        });
-        
-        // Cache all resources for offline use
-        async function cacheAllResources() {
-            const resources = [
-                // App pages
-                'app.html', 'index.html', 'manifest.json', 'logo-pol.png',
-                'v11.html', 'v12.html', 'v13.html', 'v14.html', 'v15.html',
-                'v16.html', 'v17.html', 'v18.html', 'v19.html', 'v20.html', 'v21.html', 'v22.html',
-                // TensorFlow and models
-                'https://cdn.jsdelivr.net/npm/@tensorflow/tfjs',
-                'https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection',
-                'https://cdn.jsdelivr.net/npm/@tensorflow-models/body-pix',
-                'https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet',
-                'https://cdn.jsdelivr.net/npm/@mediapipe/holistic',
-                'https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils',
-                'https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils'
-            ];
-            
-            let loaded = 0;
-            const total = resources.length;
-            
-            for (const url of resources) {
-                try {
-                    await fetch(url, { mode: 'cors' });
-                    loaded++;
-                    const percent = Math.round((loaded / total) * 100);
-                    progressFill.style.width = percent + '%';
-                    progressText.textContent = `Download: ${percent}% (${loaded}/${total})`;
-                } catch (e) {
-                    console.warn('Could not cache:', url);
-                    loaded++;
-                }
-            }
-            
-            progressText.textContent = 'Download completato! Puoi usare l\'app offline.';
-        }
-        
-        // Show status message
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = 'status-message show ' + type;
-        }
-        
-        // Register service worker
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js')
-                .then(reg => console.log('SW registered'))
-                .catch(err => console.error('SW error:', err));
-        }
     </script>
 </body>
 </html>
