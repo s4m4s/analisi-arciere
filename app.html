@@ -2078,6 +2078,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v32</strong> - Export video a 3 fasi (estrazione→analisi→composizione), più stabile</p>
                     <p><strong>v31</strong> - Export video con AI in tempo reale (massima qualità), manuale PDF</p>
                     <p><strong>v30</strong> - Download elaborazioni con scheletro/griglia</p>
                     <p><strong>v29</strong> - Elaborazioni come sottoprodotti, fix griglia playback</p>
@@ -2100,7 +2101,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 31 - Dicembre 2025</em>
+                    <em>Versione 32 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -4126,14 +4127,15 @@
             
             // Mostra progresso dettagliato
             const statusEl = document.createElement('div');
-            statusEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:2rem 3rem;border-radius:16px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:320px;';
+            statusEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:2rem 3rem;border-radius:16px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:350px;';
             statusEl.innerHTML = `
                 <p style="margin-bottom:0.5rem;font-weight:bold;font-size:1.1rem;">Generazione Video con AI</p>
-                <p style="margin-bottom:1rem;color:var(--text-muted);font-size:0.85rem;">Modello: ${model.toUpperCase()}</p>
+                <p style="margin-bottom:0.5rem;color:var(--text-muted);font-size:0.85rem;">Modello: ${model.toUpperCase()}</p>
+                <p id="exportPhase" style="margin-bottom:0.5rem;color:var(--accent-current);font-size:0.8rem;font-weight:bold;">FASE 1/3: Estrazione frame</p>
                 <div style="background:var(--bg-tertiary);border-radius:8px;height:24px;overflow:hidden;margin-bottom:1rem;">
-                    <div id="exportProgressBar" style="background:var(--accent-current);height:100%;width:0%;transition:width 0.3s;"></div>
+                    <div id="exportProgressBar" style="background:var(--accent-current);height:100%;width:0%;transition:width 0.2s;"></div>
                 </div>
-                <p id="exportStatus" style="font-size:0.9rem;">Inizializzazione AI...</p>
+                <p id="exportStatus" style="font-size:0.9rem;">Preparazione...</p>
                 <p id="exportDetails" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;"></p>
                 <button id="exportCancel" style="margin-top:1rem;padding:0.5rem 1.5rem;background:var(--danger);border:none;color:white;border-radius:8px;cursor:pointer;">Annulla</button>
             `;
@@ -4144,7 +4146,8 @@
                 cancelled = true;
             });
             
-            const updateProgress = (percent, status, details = '') => {
+            const updateProgress = (phase, phaseNum, percent, status, details = '') => {
+                document.getElementById('exportPhase').textContent = `FASE ${phaseNum}/3: ${phase}`;
                 document.getElementById('exportProgressBar').style.width = `${percent}%`;
                 document.getElementById('exportStatus').textContent = status;
                 document.getElementById('exportDetails').textContent = details;
@@ -4155,15 +4158,17 @@
             let exportBodyPix = null;
             
             try {
-                // Crea detector dedicato all'export con MASSIMA QUALITÀ
-                updateProgress(0, 'Caricamento modello AI...', 'Configurazione alta qualità');
+                // ============================================
+                // FASE 0: Preparazione e caricamento modello AI
+                // ============================================
+                updateProgress('Caricamento AI', 0, 0, 'Inizializzazione modello...', 'Configurazione alta qualità');
                 
                 if (model === 'holistic') {
                     exportHolistic = new Holistic({
                         locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${file}`
                     });
                     exportHolistic.setOptions({
-                        modelComplexity: 2,        // MASSIMA qualità (0, 1, 2)
+                        modelComplexity: 2,        // MASSIMA qualità
                         smoothLandmarks: false,    // No smoothing per massima precisione
                         enableSegmentation: false,
                         refineFaceLandmarks: true, // Dettagli viso
@@ -4174,33 +4179,41 @@
                     
                 } else if (model === 'bodypix') {
                     exportBodyPix = await bodyPix.load({
-                        architecture: 'ResNet50',  // Più preciso di MobileNet
+                        architecture: 'ResNet50',
                         outputStride: 16,
-                        quantBytes: 4              // Massima precisione
+                        quantBytes: 4
                     });
                     
                 } else {
-                    // Lightning - usa Thunder per massima qualità
+                    // Lightning → Thunder per massima qualità
                     exportDetector = await poseDetection.createDetector(
                         poseDetection.SupportedModels.MoveNet,
                         { 
-                            modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER, // Thunder più preciso di Lightning
+                            modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER,
                             enableSmoothing: false
                         }
                     );
                 }
                 
-                updateProgress(5, 'Preparazione video...');
-                
-                // Crea video temporaneo
+                // Prepara video sorgente
                 const tempVideo = document.createElement('video');
                 tempVideo.src = recording.url;
                 tempVideo.muted = true;
                 tempVideo.playsInline = true;
+                tempVideo.preload = 'auto';
                 
                 await new Promise((resolve, reject) => {
                     tempVideo.onloadedmetadata = resolve;
                     tempVideo.onerror = reject;
+                });
+                
+                // Aspetta che il video sia completamente caricato
+                await new Promise((resolve) => {
+                    if (tempVideo.readyState >= 3) {
+                        resolve();
+                    } else {
+                        tempVideo.oncanplaythrough = resolve;
+                    }
                 });
                 
                 const width = tempVideo.videoWidth;
@@ -4209,15 +4222,162 @@
                 const fps = 30;
                 const totalFrames = Math.floor(duration * fps);
                 
-                // Stima tempo
-                const msPerFrame = model === 'holistic' ? 150 : (model === 'bodypix' ? 100 : 50);
-                const estimatedSeconds = Math.round((totalFrames * msPerFrame) / 1000);
+                // Stima tempo totale
+                const msPerFrame = model === 'holistic' ? 200 : (model === 'bodypix' ? 120 : 60);
+                const estimatedSeconds = Math.round((totalFrames * msPerFrame * 2) / 1000); // x2 per estrazione + analisi
                 const estimatedMin = Math.floor(estimatedSeconds / 60);
                 const estimatedSec = estimatedSeconds % 60;
                 
-                updateProgress(5, 'Preparazione canvas...', `${totalFrames} frame • Tempo stimato: ${estimatedMin}m ${estimatedSec}s`);
+                updateProgress('Caricamento AI', 0, 5, 'Modello pronto', `${totalFrames} frame • Stimato: ~${estimatedMin}m ${estimatedSec}s`);
                 
-                // Canvas per rendering
+                // Canvas per estrazione e rendering
+                const extractCanvas = document.createElement('canvas');
+                extractCanvas.width = width;
+                extractCanvas.height = height;
+                const extractCtx = extractCanvas.getContext('2d');
+                
+                // ============================================
+                // FASE 1: Estrazione frame dal video
+                // ============================================
+                const extractedFrames = []; // Array di ImageData
+                const startPhase1 = Date.now();
+                
+                for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
+                    if (cancelled) throw new Error('Annullato dall\'utente');
+                    
+                    const targetTime = frameNum / fps;
+                    tempVideo.currentTime = targetTime;
+                    
+                    // Aspetta seek completato
+                    await new Promise(resolve => {
+                        const onSeeked = () => {
+                            tempVideo.removeEventListener('seeked', onSeeked);
+                            resolve();
+                        };
+                        tempVideo.addEventListener('seeked', onSeeked);
+                        // Timeout di sicurezza
+                        setTimeout(resolve, 500);
+                    });
+                    
+                    // Piccola pausa per stabilizzare il frame
+                    await new Promise(r => setTimeout(r, 10));
+                    
+                    // Estrai frame come ImageData
+                    extractCtx.save();
+                    if (state.flipVideo) {
+                        extractCtx.translate(width, 0);
+                        extractCtx.scale(-1, 1);
+                    }
+                    extractCtx.drawImage(tempVideo, 0, 0, width, height);
+                    extractCtx.restore();
+                    
+                    const imageData = extractCtx.getImageData(0, 0, width, height);
+                    extractedFrames.push(imageData);
+                    
+                    // Aggiorna progresso Fase 1 (0-33%)
+                    const progress1 = Math.round(((frameNum + 1) / totalFrames) * 100);
+                    const elapsed1 = (Date.now() - startPhase1) / 1000;
+                    const remaining1 = Math.round((elapsed1 / (frameNum + 1)) * (totalFrames - frameNum - 1));
+                    
+                    updateProgress('Estrazione frame', 1, Math.round(progress1 * 0.33), 
+                        `Frame ${frameNum + 1}/${totalFrames}`,
+                        `${progress1}% • Rimanente fase: ${Math.floor(remaining1/60)}m ${remaining1%60}s`
+                    );
+                    
+                    // Yield per UI
+                    if (frameNum % 10 === 0) {
+                        await new Promise(r => setTimeout(r, 1));
+                    }
+                }
+                
+                console.log(`Fase 1 completata: ${extractedFrames.length} frame estratti`);
+                
+                // ============================================
+                // FASE 2: Analisi AI di ogni frame
+                // ============================================
+                const analyzedFrames = []; // Array di {imageData, holisticData/keypoints}
+                const startPhase2 = Date.now();
+                
+                // Canvas per analisi (l'AI lavora su canvas, non su ImageData direttamente)
+                const analysisCanvas = document.createElement('canvas');
+                analysisCanvas.width = width;
+                analysisCanvas.height = height;
+                const analysisCtx = analysisCanvas.getContext('2d');
+                
+                for (let frameNum = 0; frameNum < extractedFrames.length; frameNum++) {
+                    if (cancelled) throw new Error('Annullato dall\'utente');
+                    
+                    // Metti ImageData sul canvas per analisi
+                    analysisCtx.putImageData(extractedFrames[frameNum], 0, 0);
+                    
+                    let analysisResult = {
+                        imageData: extractedFrames[frameNum],
+                        holisticData: null,
+                        keypoints: null
+                    };
+                    
+                    // Analizza con AI
+                    if (model === 'holistic' && exportHolistic) {
+                        const holisticResult = await new Promise((resolve) => {
+                            exportHolistic.onResults((results) => resolve(results));
+                            exportHolistic.send({ image: analysisCanvas });
+                        });
+                        
+                        if (holisticResult && holisticResult.poseLandmarks) {
+                            analysisResult.holisticData = {
+                                poseLandmarks: holisticResult.poseLandmarks,
+                                leftHandLandmarks: holisticResult.leftHandLandmarks,
+                                rightHandLandmarks: holisticResult.rightHandLandmarks,
+                                faceLandmarks: holisticResult.faceLandmarks
+                            };
+                        }
+                        
+                    } else if (model === 'bodypix' && exportBodyPix) {
+                        const segmentation = await exportBodyPix.segmentPerson(analysisCanvas, {
+                            flipHorizontal: false,
+                            internalResolution: 'high',
+                            segmentationThreshold: 0.7
+                        });
+                        
+                        if (segmentation && segmentation.allPoses && segmentation.allPoses.length > 0) {
+                            analysisResult.keypoints = segmentation.allPoses[0].keypoints;
+                        }
+                        
+                    } else if (exportDetector) {
+                        const poses = await exportDetector.estimatePoses(analysisCanvas);
+                        if (poses.length > 0) {
+                            analysisResult.keypoints = poses[0].keypoints;
+                        }
+                    }
+                    
+                    analyzedFrames.push(analysisResult);
+                    
+                    // Aggiorna progresso Fase 2 (33-66%)
+                    const progress2 = Math.round(((frameNum + 1) / extractedFrames.length) * 100);
+                    const elapsed2 = (Date.now() - startPhase2) / 1000;
+                    const remaining2 = Math.round((elapsed2 / (frameNum + 1)) * (extractedFrames.length - frameNum - 1));
+                    
+                    updateProgress('Analisi AI', 2, 33 + Math.round(progress2 * 0.33),
+                        `Frame ${frameNum + 1}/${extractedFrames.length}`,
+                        `${progress2}% • Rimanente fase: ${Math.floor(remaining2/60)}m ${remaining2%60}s`
+                    );
+                    
+                    // Yield per UI
+                    if (frameNum % 3 === 0) {
+                        await new Promise(r => setTimeout(r, 1));
+                    }
+                }
+                
+                console.log(`Fase 2 completata: ${analyzedFrames.length} frame analizzati`);
+                
+                // Libera memoria dei frame estratti (non servono più)
+                extractedFrames.length = 0;
+                
+                // ============================================
+                // FASE 3: Composizione video finale
+                // ============================================
+                updateProgress('Composizione video', 3, 66, 'Preparazione encoder...', '');
+                
                 const renderCanvas = document.createElement('canvas');
                 renderCanvas.width = width;
                 renderCanvas.height = height;
@@ -4229,7 +4389,7 @@
                     ? 'video/webm;codecs=vp9' : 'video/webm';
                 const mediaRecorder = new MediaRecorder(stream, { 
                     mimeType: mimeType,
-                    videoBitsPerSecond: 8000000 // 8 Mbps per alta qualità
+                    videoBitsPerSecond: 8000000
                 });
                 
                 const chunks = [];
@@ -4237,102 +4397,56 @@
                     if (e.data.size > 0) chunks.push(e.data);
                 };
                 
+                // Funzione per aggiungere un frame al video
+                const addFrameToVideo = (frameData) => {
+                    return new Promise(resolve => {
+                        // Disegna frame originale
+                        renderCtx.putImageData(frameData.imageData, 0, 0);
+                        
+                        // Disegna scheletro
+                        if (frameData.holisticData) {
+                            renderHolisticOnCanvas(renderCtx, frameData.holisticData, width, height);
+                        } else if (frameData.keypoints) {
+                            renderSkeletonOnCanvas(renderCtx, frameData.keypoints, width, height);
+                        }
+                        
+                        // Disegna griglia se attiva
+                        if (elaboration.settings?.showGrid) {
+                            const density = elaboration.settings.gridDensity || 16;
+                            renderGridOnCanvas(renderCtx, width, height, density);
+                        }
+                        
+                        // Aspetta un frame time per la registrazione
+                        setTimeout(resolve, 1000 / fps);
+                    });
+                };
+                
                 mediaRecorder.start(100);
+                const startPhase3 = Date.now();
                 
-                const startTime = Date.now();
-                
-                // Processa ogni frame
-                for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
+                for (let frameNum = 0; frameNum < analyzedFrames.length; frameNum++) {
                     if (cancelled) {
                         mediaRecorder.stop();
                         throw new Error('Annullato dall\'utente');
                     }
                     
-                    const targetTime = frameNum / fps;
-                    tempVideo.currentTime = targetTime;
+                    await addFrameToVideo(analyzedFrames[frameNum]);
                     
-                    await new Promise(resolve => {
-                        const onSeeked = () => {
-                            tempVideo.removeEventListener('seeked', onSeeked);
-                            setTimeout(resolve, 20);
-                        };
-                        tempVideo.addEventListener('seeked', onSeeked);
-                    });
+                    // Aggiorna progresso Fase 3 (66-100%)
+                    const progress3 = Math.round(((frameNum + 1) / analyzedFrames.length) * 100);
+                    const elapsed3 = (Date.now() - startPhase3) / 1000;
+                    const remaining3 = Math.round((elapsed3 / (frameNum + 1)) * (analyzedFrames.length - frameNum - 1));
                     
-                    // Disegna frame video
-                    renderCtx.save();
-                    if (state.flipVideo) {
-                        renderCtx.translate(width, 0);
-                        renderCtx.scale(-1, 1);
-                    }
-                    renderCtx.drawImage(tempVideo, 0, 0, width, height);
-                    renderCtx.restore();
-                    
-                    // Analisi AI in tempo reale
-                    let analysisResult = null;
-                    
-                    if (model === 'holistic' && exportHolistic) {
-                        analysisResult = await new Promise((resolve) => {
-                            exportHolistic.onResults((results) => {
-                                resolve(results);
-                            });
-                            exportHolistic.send({ image: tempVideo });
-                        });
-                        
-                        if (analysisResult && analysisResult.poseLandmarks) {
-                            renderHolisticOnCanvas(renderCtx, {
-                                poseLandmarks: analysisResult.poseLandmarks,
-                                leftHandLandmarks: analysisResult.leftHandLandmarks,
-                                rightHandLandmarks: analysisResult.rightHandLandmarks,
-                                faceLandmarks: analysisResult.faceLandmarks
-                            }, width, height);
-                        }
-                        
-                    } else if (model === 'bodypix' && exportBodyPix) {
-                        const segmentation = await exportBodyPix.segmentPerson(tempVideo, {
-                            flipHorizontal: false,
-                            internalResolution: 'high',
-                            segmentationThreshold: 0.7
-                        });
-                        
-                        if (segmentation && segmentation.allPoses && segmentation.allPoses.length > 0) {
-                            renderSkeletonOnCanvas(renderCtx, segmentation.allPoses[0].keypoints, width, height);
-                        }
-                        
-                    } else if (exportDetector) {
-                        const poses = await exportDetector.estimatePoses(tempVideo);
-                        if (poses.length > 0) {
-                            renderSkeletonOnCanvas(renderCtx, poses[0].keypoints, width, height);
-                        }
-                    }
-                    
-                    // Disegna griglia se attiva
-                    if (elaboration.settings?.showGrid) {
-                        const density = elaboration.settings.gridDensity || 16;
-                        renderGridOnCanvas(renderCtx, width, height, density);
-                    }
-                    
-                    // Aggiorna progresso
-                    const progress = Math.round(((frameNum + 1) / totalFrames) * 100);
-                    const elapsed = (Date.now() - startTime) / 1000;
-                    const avgTimePerFrame = elapsed / (frameNum + 1);
-                    const remaining = Math.round(avgTimePerFrame * (totalFrames - frameNum - 1));
-                    const remMin = Math.floor(remaining / 60);
-                    const remSec = remaining % 60;
-                    
-                    updateProgress(
-                        5 + (progress * 0.9), // 5-95%
-                        `Elaborazione frame ${frameNum + 1}/${totalFrames}`,
-                        `${progress}% • Rimanente: ${remMin}m ${remSec}s`
+                    updateProgress('Composizione video', 3, 66 + Math.round(progress3 * 0.32),
+                        `Frame ${frameNum + 1}/${analyzedFrames.length}`,
+                        `${progress3}% • Rimanente: ${Math.floor(remaining3/60)}m ${remaining3%60}s`
                     );
                     
-                    // Yield per aggiornare UI
-                    if (frameNum % 5 === 0) {
+                    // Yield per UI ogni 10 frame
+                    if (frameNum % 10 === 0) {
                         await new Promise(r => setTimeout(r, 1));
                     }
                 }
-                
-                updateProgress(95, 'Finalizzazione video...');
                 
                 // Ferma recording
                 mediaRecorder.stop();
@@ -4341,7 +4455,7 @@
                     mediaRecorder.onstop = resolve;
                 });
                 
-                updateProgress(98, 'Preparazione download...');
+                updateProgress('Composizione video', 3, 99, 'Preparazione download...', '');
                 
                 // Crea blob e scarica
                 const blob = new Blob(chunks, { type: 'video/webm' });
@@ -4357,8 +4471,11 @@
                 
                 URL.revokeObjectURL(url);
                 
-                updateProgress(100, 'Completato!', 'Download avviato');
-                await new Promise(r => setTimeout(r, 1000));
+                // Libera memoria
+                analyzedFrames.length = 0;
+                
+                updateProgress('Completato!', 3, 100, 'Download avviato!', '');
+                await new Promise(r => setTimeout(r, 1500));
                 
             } catch (error) {
                 console.error('Errore export elaborazione:', error);
