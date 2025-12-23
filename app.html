@@ -1372,7 +1372,27 @@
         .elaboration-time {
             color: var(--text-muted);
             font-size: 0.7rem;
+            flex: 1;
+        }
+        
+        .elaboration-download {
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
             margin-left: auto;
+        }
+        
+        .elaboration-download:hover {
+            background: var(--accent-current);
+            color: white;
         }
         
         /* Tips Panel */
@@ -1972,7 +1992,7 @@
     
     <!-- Manual Modal -->
     <div class="modal-overlay" id="manualModal">
-        <div class="modal" style="max-width: 700px; max-height: 85vh;">
+        <div class="modal" style="max-width: 750px; max-height: 85vh;">
             <div class="modal-header">
                 <span class="modal-title">📖 Manuale d'Uso</span>
                 <button class="modal-close" id="manualModalClose">✕</button>
@@ -1984,10 +2004,17 @@
                 
                 <h3>🎯 Primo Avvio</h3>
                 <ol>
-                    <li>Attendi il caricamento del modello AI</li>
+                    <li>Attendi il caricamento del modello AI (Holistic di default)</li>
                     <li>Consenti l'accesso alla fotocamera</li>
                     <li>Posizionati in modo da essere inquadrato completamente</li>
                 </ol>
+                
+                <h3>🤖 Modelli AI Disponibili</h3>
+                <ul>
+                    <li><strong>Holistic</strong> - Completo: corpo, mani e viso (default)</li>
+                    <li><strong>Lightning</strong> - Veloce: solo corpo, ideale per dispositivi lenti</li>
+                    <li><strong>BodyPix</strong> - Segmentazione: silhouette del corpo</li>
+                </ul>
                 
                 <h3>🎨 Colori Scheletro</h3>
                 <ul>
@@ -1996,44 +2023,83 @@
                     <li><span style="color:#ffe66d">●</span> <strong>Braccio Arco</strong> - Giallo</li>
                     <li><span style="color:#95e1d3">●</span> <strong>Braccio Trazione</strong> - Verde acqua</li>
                     <li><span style="color:#dda0dd">●</span> <strong>Busto</strong> - Viola</li>
-                    <li><span style="color:#87ceeb">●</span> <strong>Testa</strong> - Azzurro</li>
+                    <li><span style="color:#ff9f43">●</span> <strong>Collo</strong> - Arancione</li>
+                    <li><span style="color:#87ceeb">●</span> <strong>Testa/Viso</strong> - Azzurro</li>
+                    <li><span style="color:#ffcc00">●</span> <strong>Mani</strong> - Giallo oro</li>
+                    <li><span style="color:#ffffff">●</span> <strong>Gambe</strong> - Bianco</li>
                 </ul>
                 
-                <h3>🎬 Registrazione</h3>
-                <ul>
-                    <li>Premi il pulsante rosso per registrare</li>
-                    <li>Il video includerà tutto quello che vedi (scheletro, griglia, ecc.)</li>
-                    <li>Disattiva lo scheletro prima di registrare per avere il video pulito</li>
-                </ul>
+                <h3>🎬 Registrazione e Analisi</h3>
+                <ol>
+                    <li><strong>Registra</strong>: premi il pulsante rosso 🔴</li>
+                    <li>Il video includerà ciò che vedi (scheletro, griglia se attivi)</li>
+                    <li><strong>Per video pulito</strong>: disattiva scheletro prima di registrare</li>
+                    <li><strong>Analisi AI</strong>: sul video registrato, clicca l'icona AI e scegli il modello</li>
+                </ol>
                 
-                <h3>📊 Analisi Video</h3>
+                <h3>📂 Elaborazioni (Sottoprodotti)</h3>
+                <p>Ogni analisi AI crea un <strong>sottoprodotto</strong> sotto il video originale:</p>
                 <ul>
-                    <li>Video <strong>con scheletro</strong>: si riproduce direttamente</li>
-                    <li>Video <strong>senza scheletro</strong>: premi "AI" per analizzare frame per frame</li>
-                    <li>Usa i controlli per andare avanti/indietro frame per frame</li>
+                    <li><span style="background:#9b59b6;color:white;padding:2px 6px;border-radius:4px;font-weight:bold">H</span> Holistic (viola)</li>
+                    <li><span style="background:#f39c12;color:white;padding:2px 6px;border-radius:4px;font-weight:bold">L</span> Lightning (arancione)</li>
+                    <li><span style="background:#3498db;color:white;padding:2px 6px;border-radius:4px;font-weight:bold">B</span> BodyPix (blu)</li>
+                </ul>
+                <p>Icone: <strong>⊞</strong> = griglia attiva, <strong>ℹ</strong> = info angoli attive</p>
+                <p>Clicca sul video originale o su un'elaborazione per visualizzarla.</p>
+                <p><strong>Download</strong>: puoi scaricare sia l'originale che le elaborazioni (con scheletro/griglia incorporati).</p>
+                
+                <h3>⊞ Griglia</h3>
+                <ul>
+                    <li>Nel <strong>live</strong>: seleziona densità dal menu laterale</li>
+                    <li>Nel <strong>playback</strong>: clicca icona griglia per menu densità (OFF, 8, 16, 24, 32, 48)</li>
                 </ul>
                 
                 <h3>⚙️ Impostazioni</h3>
                 <ul>
-                    <li><strong>Ingranaggio</strong>: configura le soglie degli angoli per tipo arco</li>
-                    <li><strong>Atleti</strong>: gestisci gli arcieri</li>
+                    <li><strong>Ingranaggio</strong>: configura soglie angoli per tipo arco</li>
+                    <li><strong>Atleti</strong>: gestisci lista arcieri</li>
+                    <li><strong>Tipo Arco</strong>: Olimpico, Compound, Barebow</li>
+                    <li><strong>Mano</strong>: Destro o Mancino</li>
                 </ul>
                 
                 <h3>📱 Schermo Intero</h3>
-                <ul>
-                    <li>In fullscreen, usa il menu hamburger (☰) in alto a destra</li>
-                    <li>Contiene tutti i controlli dell'app</li>
-                </ul>
+                <p>In fullscreen, usa il menu hamburger (☰) per accedere a tutti i controlli.</p>
                 
                 <h3>🔧 Risoluzione Problemi</h3>
                 <ul>
-                    <li><strong>Fotocamera non funziona</strong>: verifica i permessi del browser</li>
-                    <li><strong>Scheletro non appare</strong>: migliora l'illuminazione, inquadrati completamente</li>
-                    <li><strong>App lenta</strong>: usa il modello "Lightning" (più veloce)</li>
+                    <li><strong>Fotocamera non funziona</strong>: verifica permessi browser</li>
+                    <li><strong>Scheletro non appare</strong>: migliora illuminazione, inquadrati completamente</li>
+                    <li><strong>App lenta</strong>: usa modello Lightning</li>
+                    <li><strong>Analisi bloccata</strong>: ricarica la pagina e riprova</li>
                 </ul>
                 
+                <hr style="margin: 2rem 0; border-color: var(--border-color);">
+                
+                <h3>📋 Changelog</h3>
+                
+                <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v30</strong> - Download elaborazioni con scheletro/griglia</p>
+                    <p><strong>v29</strong> - Elaborazioni come sottoprodotti, fix griglia playback</p>
+                    <p><strong>v28</strong> - Dropdown griglia, durata e note registrazioni, launcher semplificato</p>
+                    <p><strong>v27</strong> - Holistic identico live/playback</p>
+                    <p><strong>v26</strong> - Holistic mani+faccia nel frame-by-frame</p>
+                    <p><strong>v25</strong> - Griglia in playback</p>
+                    <p><strong>v24</strong> - Menu selezione modello per analisi</p>
+                    <p><strong>v23</strong> - Fix analisi, scheletro OFF = AI OFF</p>
+                    <p><strong>v22</strong> - Launcher con storico versioni</p>
+                    <p><strong>v21</strong> - 3 modelli AI: Holistic, Lightning, BodyPix</p>
+                    <p><strong>v20</strong> - Gestione atleti, parametri angoli personalizzabili</p>
+                    <p><strong>v19</strong> - Overlay angoli, linea collo</p>
+                    <p><strong>v18</strong> - Scheletro colorato per segmento</p>
+                    <p><strong>v17</strong> - Griglia configurabile</p>
+                    <p><strong>v16</strong> - Analisi frame-by-frame</p>
+                    <p><strong>v15</strong> - Playback registrazioni</p>
+                    <p><strong>v14</strong> - Registrazione video</p>
+                    <p><strong>v11-13</strong> - Interfaccia base, detection pose</p>
+                </div>
+                
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 29 - Dicembre 2025</em>
+                    <em>Versione 30 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -3881,6 +3947,11 @@
                             <span class="elaboration-badge model-${elab.model}">${elab.modelLabel}</span>
                             <span class="elaboration-icons">${gridIcon}${infoIcon}</span>
                             <span class="elaboration-time">${elab.time}</span>
+                            <button class="elaboration-download" data-rec-id="${rec.id}" data-elab-id="${elab.id}" title="Scarica elaborazione">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                                </svg>
+                            </button>
                         </div>
                     `;
                 }).join('');
@@ -3952,6 +4023,16 @@
                     e.stopPropagation();
                     const id = parseInt(btn.dataset.id);
                     downloadRecording(id);
+                });
+            });
+            
+            // Add click listeners per download elaborazioni
+            elements.recordingsList.querySelectorAll('.elaboration-download').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const recId = parseInt(btn.dataset.recId);
+                    const elabId = parseInt(btn.dataset.elabId);
+                    downloadElaboration(recId, elabId);
                 });
             });
             
@@ -4030,6 +4111,359 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+        
+        // Download elaborazione con scheletro/griglia renderizzati nel video
+        async function downloadElaboration(recId, elabId) {
+            const recording = state.recordings.find(r => r.id === recId);
+            if (!recording) return;
+            
+            const elaboration = (recording.elaborations || []).find(e => e.id === elabId);
+            if (!elaboration) return;
+            
+            // Mostra progresso
+            const statusEl = document.createElement('div');
+            statusEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:2rem;border-radius:12px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);';
+            statusEl.innerHTML = '<p style="margin-bottom:1rem;font-weight:bold;">Generazione video in corso...</p><p id="exportProgress">0%</p>';
+            document.body.appendChild(statusEl);
+            
+            try {
+                // Crea video temporaneo per leggere i frame
+                const tempVideo = document.createElement('video');
+                tempVideo.src = recording.url;
+                tempVideo.muted = true;
+                
+                await new Promise((resolve, reject) => {
+                    tempVideo.onloadedmetadata = resolve;
+                    tempVideo.onerror = reject;
+                });
+                
+                const width = tempVideo.videoWidth;
+                const height = tempVideo.videoHeight;
+                const duration = tempVideo.duration;
+                const fps = 30;
+                const totalFrames = Math.floor(duration * fps);
+                
+                // Crea canvas per renderizzare
+                const renderCanvas = document.createElement('canvas');
+                renderCanvas.width = width;
+                renderCanvas.height = height;
+                const renderCtx = renderCanvas.getContext('2d');
+                
+                // Setup MediaRecorder
+                const stream = renderCanvas.captureStream(fps);
+                const mediaRecorder = new MediaRecorder(stream, { 
+                    mimeType: 'video/webm;codecs=vp9',
+                    videoBitsPerSecond: 5000000
+                });
+                
+                const chunks = [];
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) chunks.push(e.data);
+                };
+                
+                mediaRecorder.start(100);
+                
+                // Processa ogni frame
+                for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
+                    const targetTime = frameNum / fps;
+                    tempVideo.currentTime = targetTime;
+                    
+                    await new Promise(resolve => {
+                        tempVideo.onseeked = () => setTimeout(resolve, 30);
+                    });
+                    
+                    // Disegna frame video
+                    renderCtx.save();
+                    if (state.flipVideo) {
+                        renderCtx.translate(width, 0);
+                        renderCtx.scale(-1, 1);
+                    }
+                    renderCtx.drawImage(tempVideo, 0, 0, width, height);
+                    renderCtx.restore();
+                    
+                    // Disegna griglia se attiva
+                    if (elaboration.settings?.showGrid) {
+                        const density = elaboration.settings.gridDensity || 16;
+                        const cellWidth = width / density;
+                        const cellHeight = height / density;
+                        
+                        renderCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+                        renderCtx.lineWidth = 1;
+                        
+                        for (let i = 1; i < density; i++) {
+                            renderCtx.beginPath();
+                            renderCtx.moveTo(i * cellWidth, 0);
+                            renderCtx.lineTo(i * cellWidth, height);
+                            renderCtx.stroke();
+                            
+                            renderCtx.beginPath();
+                            renderCtx.moveTo(0, i * cellHeight);
+                            renderCtx.lineTo(width, i * cellHeight);
+                            renderCtx.stroke();
+                        }
+                    }
+                    
+                    // Disegna scheletro se ci sono dati per questo frame
+                    const frameData = elaboration.frameData[frameNum];
+                    if (frameData) {
+                        // Se è Holistic, usa il disegno completo
+                        if (frameData.holisticData) {
+                            renderHolisticOnCanvas(renderCtx, frameData.holisticData, width, height);
+                        } else if (frameData.keypoints) {
+                            // Altrimenti disegna scheletro standard
+                            renderSkeletonOnCanvas(renderCtx, frameData.keypoints, width, height);
+                        }
+                    }
+                    
+                    // Aggiorna progresso
+                    const progress = Math.round(((frameNum + 1) / totalFrames) * 100);
+                    document.getElementById('exportProgress').textContent = `${progress}%`;
+                    
+                    // Yield per non bloccare UI
+                    if (frameNum % 10 === 0) {
+                        await new Promise(r => setTimeout(r, 1));
+                    }
+                }
+                
+                // Ferma recording
+                mediaRecorder.stop();
+                
+                await new Promise(resolve => {
+                    mediaRecorder.onstop = resolve;
+                });
+                
+                // Crea blob e scarica
+                const blob = new Blob(chunks, { type: 'video/webm' });
+                const url = URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                const filename = `${recording.name.replace(/[^a-z0-9]/gi, '_')}_${elaboration.modelLabel}_${elabId}.webm`;
+                link.href = url;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                URL.revokeObjectURL(url);
+                
+            } catch (error) {
+                console.error('Errore export elaborazione:', error);
+                alert('Errore durante la generazione del video');
+            } finally {
+                document.body.removeChild(statusEl);
+            }
+        }
+        
+        // Renderizza scheletro standard su canvas
+        function renderSkeletonOnCanvas(ctx, keypoints, width, height) {
+            if (!keypoints || keypoints.length < 17) return;
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            const config = bowConfig[state.bowType];
+            ctx.strokeStyle = config.color;
+            ctx.fillStyle = config.color;
+            ctx.lineWidth = 4;
+            ctx.lineCap = 'round';
+            
+            // Connessioni scheletro
+            const connections = [
+                [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
+                [5, 11], [6, 12], [11, 12],
+                [11, 13], [13, 15], [12, 14], [14, 16]
+            ];
+            
+            connections.forEach(([i, j]) => {
+                const kp1 = keypoints[i];
+                const kp2 = keypoints[j];
+                if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.moveTo(kp1.x, kp1.y);
+                    ctx.lineTo(kp2.x, kp2.y);
+                    ctx.stroke();
+                }
+            });
+            
+            // Punti
+            keypoints.forEach(kp => {
+                if (kp && kp.score > 0.3) {
+                    ctx.beginPath();
+                    ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
+                    ctx.fill();
+                }
+            });
+            
+            ctx.restore();
+        }
+        
+        // Renderizza Holistic completo su canvas
+        function renderHolisticOnCanvas(ctx, holisticData, width, height) {
+            if (!holisticData || !holisticData.poseLandmarks) return;
+            
+            ctx.save();
+            if (state.flipVideo) {
+                ctx.translate(width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 4;
+            ctx.lineCap = 'round';
+            
+            const lm = holisticData.poseLandmarks;
+            const bowSide = state.stance === 'left' ? 'left' : 'right';
+            
+            const segmentColors = {
+                shoulders: '#ff6b6b',
+                hips: '#4ecdc4',
+                bowArm: '#ffe66d',
+                drawArm: '#95e1d3',
+                torso: '#dda0dd',
+                head: '#87ceeb',
+                neck: '#ff9f43',
+                legs: '#ffffff'
+            };
+            
+            const drawLine = (idx1, idx2, color, lineWidth = 6) => {
+                if (lm[idx1] && lm[idx2]) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = lineWidth;
+                    ctx.moveTo(lm[idx1].x * width, lm[idx1].y * height);
+                    ctx.lineTo(lm[idx2].x * width, lm[idx2].y * height);
+                    ctx.stroke();
+                }
+            };
+            
+            const drawPoint = (idx, color, radius = 8) => {
+                if (lm[idx]) {
+                    ctx.beginPath();
+                    ctx.arc(lm[idx].x * width, lm[idx].y * height, radius, 0, 2 * Math.PI);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+                    ctx.strokeStyle = 'white';
+                    ctx.lineWidth = 2;
+                    ctx.shadowBlur = 0;
+                    ctx.stroke();
+                    ctx.shadowBlur = 4;
+                }
+            };
+            
+            // Corpo
+            drawLine(11, 12, segmentColors.shoulders, 8);
+            drawPoint(11, segmentColors.shoulders, 10);
+            drawPoint(12, segmentColors.shoulders, 10);
+            
+            drawLine(23, 24, segmentColors.hips, 8);
+            drawPoint(23, segmentColors.hips, 10);
+            drawPoint(24, segmentColors.hips, 10);
+            
+            drawLine(11, 23, segmentColors.torso, 6);
+            drawLine(12, 24, segmentColors.torso, 6);
+            
+            if (bowSide === 'left') {
+                drawLine(11, 13, segmentColors.bowArm, 6);
+                drawLine(13, 15, segmentColors.bowArm, 6);
+                drawPoint(13, segmentColors.bowArm);
+                drawPoint(15, segmentColors.bowArm);
+                drawLine(12, 14, segmentColors.drawArm, 6);
+                drawLine(14, 16, segmentColors.drawArm, 6);
+                drawPoint(14, segmentColors.drawArm);
+                drawPoint(16, segmentColors.drawArm);
+            } else {
+                drawLine(12, 14, segmentColors.bowArm, 6);
+                drawLine(14, 16, segmentColors.bowArm, 6);
+                drawPoint(14, segmentColors.bowArm);
+                drawPoint(16, segmentColors.bowArm);
+                drawLine(11, 13, segmentColors.drawArm, 6);
+                drawLine(13, 15, segmentColors.drawArm, 6);
+                drawPoint(13, segmentColors.drawArm);
+                drawPoint(15, segmentColors.drawArm);
+            }
+            
+            // Collo
+            if (lm[11] && lm[12] && lm[0]) {
+                const midX = (lm[11].x + lm[12].x) / 2 * width;
+                const midY = (lm[11].y + lm[12].y) / 2 * height;
+                ctx.beginPath();
+                ctx.strokeStyle = segmentColors.neck;
+                ctx.lineWidth = 5;
+                ctx.moveTo(midX, midY);
+                ctx.lineTo(lm[0].x * width, lm[0].y * height);
+                ctx.stroke();
+            }
+            
+            drawPoint(0, segmentColors.head, 8);
+            
+            // Gambe
+            drawLine(23, 25, segmentColors.legs, 5);
+            drawLine(25, 27, segmentColors.legs, 5);
+            drawLine(24, 26, segmentColors.legs, 5);
+            drawLine(26, 28, segmentColors.legs, 5);
+            drawPoint(25, segmentColors.legs, 6);
+            drawPoint(27, segmentColors.legs, 6);
+            drawPoint(26, segmentColors.legs, 6);
+            drawPoint(28, segmentColors.legs, 6);
+            
+            // Mani
+            const handColor = '#ffcc00';
+            const handConnections = [
+                [0,1],[1,2],[2,3],[3,4],
+                [0,5],[5,6],[6,7],[7,8],
+                [0,9],[9,10],[10,11],[11,12],
+                [0,13],[13,14],[14,15],[15,16],
+                [0,17],[17,18],[18,19],[19,20],
+                [5,9],[9,13],[13,17]
+            ];
+            
+            const drawHand = (landmarks) => {
+                if (!landmarks || landmarks.length === 0) return;
+                ctx.strokeStyle = handColor;
+                ctx.lineWidth = 3;
+                handConnections.forEach(([i, j]) => {
+                    if (landmarks[i] && landmarks[j]) {
+                        ctx.beginPath();
+                        ctx.moveTo(landmarks[i].x * width, landmarks[i].y * height);
+                        ctx.lineTo(landmarks[j].x * width, landmarks[j].y * height);
+                        ctx.stroke();
+                    }
+                });
+                ctx.fillStyle = handColor;
+                landmarks.forEach(pt => {
+                    if (pt) {
+                        ctx.beginPath();
+                        ctx.arc(pt.x * width, pt.y * height, 4, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                });
+            };
+            
+            drawHand(holisticData.leftHandLandmarks);
+            drawHand(holisticData.rightHandLandmarks);
+            
+            // Viso
+            if (holisticData.faceLandmarks && holisticData.faceLandmarks.length > 0) {
+                const faceContour = [10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288, 397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136, 172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109, 10];
+                ctx.beginPath();
+                ctx.strokeStyle = '#87ceeb';
+                ctx.lineWidth = 2;
+                faceContour.forEach((idx, i) => {
+                    if (holisticData.faceLandmarks[idx]) {
+                        const pt = holisticData.faceLandmarks[idx];
+                        if (i === 0) ctx.moveTo(pt.x * width, pt.y * height);
+                        else ctx.lineTo(pt.x * width, pt.y * height);
+                    }
+                });
+                ctx.closePath();
+                ctx.stroke();
+            }
+            
+            ctx.restore();
         }
 
         function playRecording(id) {
