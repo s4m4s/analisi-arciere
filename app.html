@@ -1802,7 +1802,25 @@
         .video-section:-webkit-full-screen .menu-overlay.open {
             display: block;
         }
-    </style>
+    
+        /* Onboarding / Quick Start */
+        .onboard-overlay { position: fixed; inset:0; background: rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index: 9999; }
+        .onboard-overlay.open { display:flex; }
+        .onboard-card { width:min(92vw, 520px); background: #0b1020; color:#fff; border-radius: 16px; padding: 18px 18px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+        .onboard-title { font-size: 18px; font-weight: 700; margin: 0 0 6px; }
+        .onboard-sub { opacity:.9; margin:0 0 14px; font-size: 14px; }
+        .onboard-steps { display:grid; gap:10px; margin: 12px 0 14px; }
+        .onboard-step { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08); border-radius: 12px; padding: 10px 12px; }
+        .onboard-step b { display:block; margin-bottom:4px; }
+        .onboard-actions { display:flex; gap:10px; justify-content:flex-end; margin-top: 10px; }
+        .onboard-actions .btn { border-radius: 12px; padding: 10px 12px; border: 0; cursor:pointer; font-weight:600; }
+        .onboard-actions .btn.secondary { background: rgba(255,255,255,.12); color:#fff; }
+        .onboard-actions .btn.primary { background: #2563eb; color:#fff; }
+        .onboard-actions .btn.primary:disabled { opacity:.5; cursor:not-allowed; }
+        .onboard-row { display:flex; gap:10px; flex-wrap:wrap; margin-top: 8px;}
+        .onboard-row select { flex:1; min-width: 180px; }
+
+</style>
 </head>
 <body>
     <!-- PIN Modal -->
@@ -2275,6 +2293,10 @@
                     <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
                 </svg>
             </button>
+            <button class="settings-gear-btn" id="versionBtn" title="Versioni e changelog" aria-label="Versioni e changelog">
+                <span style="font-size:18px;line-height:1">🕘</span>
+            </button>
+
         </div>
         
         <button class="athlete-btn" id="athleteBtn" title="Gestione Atleti">
@@ -2405,6 +2427,8 @@
                 </div>
                 
                 <div class="fps-counter" id="fpsCounter">-- FPS</div>
+                <div class="fps-counter" id="stabilityIndicator">Stabilità: --</div>
+
             </div>
             
             <!-- Live Controls -->
@@ -2441,6 +2465,16 @@
                             <path d="M6 20v-4"/>
                         </svg>
                     </button>
+                    <button class="control-btn" id="calibrateBtn" title="Calibra (2s) - corregge inclinazione camera">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v4"/>
+                            <path d="M12 18v4"/>
+                            <path d="M4 12H2"/>
+                            <path d="M22 12h-2"/>
+                            <circle cx="12" cy="12" r="6"/>
+                        </svg>
+                    </button>
+
                     <select class="grid-density-select" id="gridDensitySelect" title="Densità griglia">
                         <option value="8">8×8</option>
                         <option value="16" selected>16×16</option>
@@ -2625,6 +2659,11 @@
     <script>
         // App State
         const state = {
+
+            calibration: { enabled: false, shoulders: 0, hips: 0, torso: 0, head: 0 },
+            calibrationInProgress: false,
+            stability: { shoulders: [], hips: [], bowArm: [], drawArm: [], torso: [], head: [] },
+            lastAngles: null,
             bowType: 'olympic',
             stance: 'right', // archer facing left or right (default: right-handed)
             modelType: 'holistic', // 'holistic', 'lightning', 'ultralight', 'posenet', 'bodypix'
@@ -2659,6 +2698,12 @@
 
         // DOM Elements
         const elements = {
+
+            calibrateBtn: document.getElementById('calibrateBtn'),
+            onboardOverlay: document.getElementById('onboardOverlay'),
+            onboardModelSelect: document.getElementById('onboardModelSelect'),
+            onboardSkipBtn: document.getElementById('onboardSkipBtn'),
+            onboardStartBtn: document.getElementById('onboardStartBtn'),
             video: document.getElementById('videoElement'),
             playbackVideo: document.getElementById('playbackVideo'),
             canvas: document.getElementById('canvas'),
@@ -2666,6 +2711,7 @@
             modeIndicator: document.getElementById('modeIndicator'),
             modeText: document.getElementById('modeText'),
             fpsCounter: document.getElementById('fpsCounter'),
+            stabilityIndicator: document.getElementById('stabilityIndicator'),
             liveControls: document.getElementById('liveControls'),
             playbackControls: document.getElementById('playbackControls'),
             recordBtn: document.getElementById('recordBtn'),
@@ -2941,6 +2987,8 @@
         
         async function init() {
             try {
+                loadCalibration();
+                try { const mt = localStorage.getItem('aa_modelType'); if (mt) state.modelType = mt; } catch {}
                 // Load MoveNet model
                 await loadModel(state.modelType);
                 
@@ -2957,7 +3005,8 @@
                 if (elements.cameraSelect.options.length > 1) {
                     elements.cameraSelect.selectedIndex = 1;
                     await startCamera(elements.cameraSelect.value);
-                }
+                                    maybeShowOnboarding();
+}
             } catch (error) {
                 console.error('Initialization error:', error);
                 elements.loadingOverlay.querySelector('.loading-text').textContent = 
@@ -3717,18 +3766,24 @@
             const drawWrist = state.stance === 'left' ? kp[KEYPOINTS.rightWrist] : kp[KEYPOINTS.leftWrist];
             
             // Shoulders alignment
-            const shoulderAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.rightShoulder]));
+            let shoulderAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftShoulder], kp[KEYPOINTS.rightShoulder]));
+            const rawShoulders = shoulderAngle;
+            if (state.calibration.enabled) shoulderAngle = shoulderAngle - state.calibration.shoulders;
             updateAlignmentUI('alignShoulders', shoulderAngle, thresholds.shoulders);
             updateAngleOverlay('angleShoulders', shoulderAngle, thresholds.shoulders, '#ff6b6b');
             
             // Hips alignment
-            const hipAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftHip], kp[KEYPOINTS.rightHip]));
+            let hipAngle = Math.abs(calculateLineAngle(kp[KEYPOINTS.leftHip], kp[KEYPOINTS.rightHip]));
+            const rawHips = hipAngle;
+            if (state.calibration.enabled) hipAngle = hipAngle - state.calibration.hips;
             updateAlignmentUI('alignHips', hipAngle, thresholds.hips);
             updateAngleOverlay('angleHips', hipAngle, thresholds.hips, '#4ecdc4');
             
             // Bow arm angle
+            let bowArmAngle = null;
+            let drawArmAngle = null;
             if (bowShoulder.score > 0.3 && bowElbow.score > 0.3 && bowWrist.score > 0.3) {
-                const bowArmAngle = calculateAngle(bowShoulder, bowElbow, bowWrist);
+                bowArmAngle = calculateAngle(bowShoulder, bowElbow, bowWrist);
                 const bowArmDiff = Math.abs(bowArmAngle - thresholds.bowArm.target);
                 updateAlignmentUI('alignBowArm', bowArmAngle, { good: thresholds.bowArm.good, warning: thresholds.bowArm.warning }, true);
                 updateAngleOverlay('angleBowArm', bowArmAngle, { good: thresholds.bowArm.good, warning: thresholds.bowArm.warning }, '#ffe66d', true);
@@ -3736,7 +3791,7 @@
             
             // Draw arm angle
             if (drawShoulder.score > 0.3 && drawElbow.score > 0.3 && drawWrist.score > 0.3) {
-                const drawArmAngle = calculateAngle(drawShoulder, drawElbow, drawWrist);
+                drawArmAngle = calculateAngle(drawShoulder, drawElbow, drawWrist);
                 updateAlignmentUI('alignDrawArm', drawArmAngle, { good: 20, warning: 40 }, true);
                 updateAngleOverlay('angleDrawArm', drawArmAngle, { good: 20, warning: 40 }, '#95e1d3', true);
             }
@@ -3750,17 +3805,42 @@
                 x: (kp[KEYPOINTS.leftHip].x + kp[KEYPOINTS.rightHip].x) / 2,
                 y: (kp[KEYPOINTS.leftHip].y + kp[KEYPOINTS.rightHip].y) / 2
             };
-            const torsoAngle = Math.abs(90 - Math.abs(calculateLineAngle(midHip, midShoulder)));
+            let torsoAngle = Math.abs(90 - Math.abs(calculateLineAngle(midHip, midShoulder)));
+            const rawTorso = torsoAngle;
+            if (state.calibration.enabled) torsoAngle = torsoAngle - state.calibration.torso;
             updateAlignmentUI('alignTorso', torsoAngle, thresholds.torso);
             updateAngleOverlay('angleTorso', torsoAngle, thresholds.torso, '#dda0dd');
             
             // Head alignment
             const nose = kp[KEYPOINTS.nose];
             if (nose.score > 0.3) {
-                const headAngle = Math.abs(calculateLineAngle(midShoulder, nose) + 90);
+                let headAngle = Math.abs(calculateLineAngle(midShoulder, nose) + 90);
+            const rawHead = headAngle;
+            if (state.calibration.enabled) headAngle = headAngle - state.calibration.head;
                 updateAlignmentUI('alignHead', headAngle, { good: 5, warning: 10 });
                 updateAngleOverlay('angleHead', headAngle, { good: 5, warning: 10 }, '#87ceeb');
             }
+
+
+            // Save last raw angles for calibration & analysis
+            state.lastAngles = {
+                shoulders: (typeof rawShoulders !== 'undefined') ? rawShoulders : shoulderAngle,
+                hips: (typeof rawHips !== 'undefined') ? rawHips : hipAngle,
+                bowArm: bowArmAngle,
+                drawArm: drawArmAngle,
+                torso: (typeof rawTorso !== 'undefined') ? rawTorso : torsoAngle,
+                head: (typeof rawHead !== 'undefined') ? rawHead : headAngle
+            };
+
+            // Stability buffers (use adjusted values shown to user)
+            pushStability('shoulders', shoulderAngle);
+            pushStability('hips', hipAngle);
+            if (bowArmAngle !== null) pushStability('bowArm', bowArmAngle);
+            if (drawArmAngle !== null) pushStability('drawArm', drawArmAngle);
+            pushStability('torso', torsoAngle);
+            pushStability('head', headAngle);
+            updateStabilityIndicator();
+
         }
 
         function updateAlignmentUI(elementId, value, thresholds, isAbsolute = false) {
@@ -3814,6 +3894,118 @@
                 state.lastFpsTime = now;
             }
         }
+
+        function setTransientModeText(text, ms = 2500) {
+            const prev = elements.modeText ? elements.modeText.textContent : '';
+            if (elements.modeText) elements.modeText.textContent = text;
+            if (ms > 0) {
+                setTimeout(() => {
+                    if (elements.modeText) elements.modeText.textContent = prev || 'Live';
+                }, ms);
+            }
+        }
+
+        function pushStability(key, value, maxLen = 30) {
+            const arr = state.stability[key];
+            if (!arr) return;
+            arr.push(value);
+            if (arr.length > maxLen) arr.splice(0, arr.length - maxLen);
+        }
+
+        function stdDev(arr) {
+            if (!arr || arr.length < 5) return null;
+            const mean = arr.reduce((a,b)=>a+b,0) / arr.length;
+            const varr = arr.reduce((a,b)=>a + (b-mean)*(b-mean),0) / (arr.length-1);
+            return Math.sqrt(varr);
+        }
+
+        function updateStabilityIndicator() {
+            const keys = ['shoulders','hips','bowArm','drawArm','torso','head'];
+            const devs = keys.map(k => stdDev(state.stability[k])).filter(v => v !== null);
+            if (!elements.stabilityIndicator) return;
+            if (devs.length === 0) {
+                elements.stabilityIndicator.textContent = 'Stabilità: --';
+                return;
+            }
+            const avg = devs.reduce((a,b)=>a+b,0) / devs.length;
+            // Lower is better
+            let label = 'OK';
+            if (avg > 4) label = 'Instabile';
+            else if (avg > 2) label = 'Attenzione';
+            elements.stabilityIndicator.textContent = `Stabilità: ${label} (±${avg.toFixed(1)}°)`;
+        }
+
+        async function startCalibration() {
+            if (state.calibrationInProgress) return;
+            state.calibrationInProgress = true;
+            setTransientModeText('Calibrazione: resta fermo 2s…', 2200);
+
+            const samples = [];
+            const start = Date.now();
+            while (Date.now() - start < 2000) {
+                if (state.lastAngles) samples.push(state.lastAngles);
+                await new Promise(r => setTimeout(r, 66));
+            }
+
+            if (samples.length < 10) {
+                state.calibrationInProgress = false;
+                setTransientModeText('Calibrazione fallita (pochi dati)', 2500);
+                return;
+            }
+
+            const avg = (key) => samples.reduce((a,s)=>a + (s[key] ?? 0), 0) / samples.length;
+
+            // Offsets for camera tilt/baseline posture
+            state.calibration.shoulders = avg('shoulders');
+            state.calibration.hips = avg('hips');
+            state.calibration.torso = avg('torso');
+            state.calibration.head = avg('head');
+            state.calibration.enabled = true;
+
+            try {
+                localStorage.setItem('aa_calibration', JSON.stringify(state.calibration));
+            } catch {}
+
+            state.calibrationInProgress = false;
+            setTransientModeText('Calibrazione salvata ✅', 2500);
+        }
+
+        function loadCalibration() {
+            try {
+                const raw = localStorage.getItem('aa_calibration');
+                if (!raw) return;
+                const cal = JSON.parse(raw);
+                if (cal && typeof cal === 'object') {
+                    state.calibration = { ...state.calibration, ...cal, enabled: !!cal.enabled };
+                }
+
+
+        function openOnboarding() {
+            if (!elements.onboardOverlay) return;
+            elements.onboardOverlay.classList.add('open');
+            // preselect current model
+            if (elements.onboardModelSelect) elements.onboardModelSelect.value = state.modelType || 'holistic';
+        }
+
+        function closeOnboarding(neverShowAgain = false) {
+            if (!elements.onboardOverlay) return;
+            elements.onboardOverlay.classList.remove('open');
+            if (neverShowAgain) {
+                try { localStorage.setItem('aa_onboard_done', '1'); } catch {}
+            }
+        }
+
+        function maybeShowOnboarding() {
+            try {
+                const done = localStorage.getItem('aa_onboard_done');
+                if (done === '1') return;
+            } catch {}
+            openOnboarding();
+        }
+
+            } catch {}
+        }
+
 
         // Recording functionality
         let mediaRecorder;
@@ -5633,7 +5825,15 @@
                 document.getElementById('anglesOverlay').style.display = state.showAlignments ? 'flex' : 'none';
             });
             
-            // Grid density
+            
+
+            // Calibrate button
+            if (elements.calibrateBtn) {
+                elements.calibrateBtn.addEventListener('click', () => {
+                    startCalibration();
+                });
+            }
+// Grid density
             document.getElementById('gridDensitySelect').addEventListener('change', (e) => {
                 state.gridDensity = parseInt(e.target.value);
             });
@@ -6216,6 +6416,23 @@
             document.getElementById('settingsModalClose').addEventListener('click', closeSettingsModal);
             document.getElementById('settingsSave').addEventListener('click', saveSettings);
             document.getElementById('settingsReset').addEventListener('click', resetSettings);
+
+
+            // Quick start onboarding events
+            if (elements.onboardModelSelect) {
+                elements.onboardModelSelect.addEventListener('change', async (e) => {
+                    const val = e.target.value;
+                    state.modelType = val;
+                    try { localStorage.setItem('aa_modelType', val); } catch {}
+                    await loadModel(val);
+                });
+            }
+            if (elements.onboardStartBtn) {
+                elements.onboardStartBtn.addEventListener('click', () => closeOnboarding(true));
+            }
+            if (elements.onboardSkipBtn) {
+                elements.onboardSkipBtn.addEventListener('click', () => closeOnboarding(true));
+            }
             
             // Athletes modal - direct access (no PIN)
             document.getElementById('athleteBtn').addEventListener('click', openAthletesModal);
@@ -6243,10 +6460,16 @@
             });
             
             // Versions modal events
-            document.getElementById('versionBtn').addEventListener('click', () => {
-                document.getElementById('versionsModal').classList.add('open');
-            });
+            const versionBtnEl = document.getElementById('versionBtn');
+            if (versionBtnEl) {
+                versionBtnEl.addEventListener('click', () => {
+                    document.getElementById('versionsModal').classList.add('open');
+                });
+            }
             document.getElementById('versionsModalClose').addEventListener('click', () => {
+                document.getElementById('versionsModal').classList.remove('open');
+            });
+document.getElementById('versionsModalClose').addEventListener('click', () => {
                 document.getElementById('versionsModal').classList.remove('open');
             });
             
@@ -6419,5 +6642,41 @@
         // Start the app
         init();
     </script>
+
+    <!-- Quick Start Onboarding (first run) -->
+    <div class="onboard-overlay" id="onboardOverlay" role="dialog" aria-modal="true" aria-labelledby="onboardTitle">
+        <div class="onboard-card">
+            <h2 class="onboard-title" id="onboardTitle">Avvio rapido</h2>
+            <p class="onboard-sub">In 30 secondi sei operativo (poi non ti disturba più).</p>
+
+            <div class="onboard-steps">
+                <div class="onboard-step">
+                    <b>1) Inquadratura</b>
+                    Figura intera, camera all’altezza spalle e parallela al tiratore.
+                </div>
+                <div class="onboard-step">
+                    <b>2) Modello</b>
+                    Se vedi scatti o FPS bassi, usa <b>Lightning</b>. Se vuoi più dettaglio (mani/viso), usa <b>Holistic</b>.
+                    <div class="onboard-row">
+                        <select id="onboardModelSelect" class="settings-select">
+                            <option value="holistic">Holistic (più completo)</option>
+                            <option value="lightning">Lightning (più veloce)</option>
+                            <option value="bodypix">BodyPix (silhouette)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="onboard-step">
+                    <b>3) Calibrazione</b>
+                    Premi <b>Calibra</b> (mirino) e resta fermo 2s: riduce errori da inclinazione camera.
+                </div>
+            </div>
+
+            <div class="onboard-actions">
+                <button class="btn secondary" id="onboardSkipBtn">Non mostrare più</button>
+                <button class="btn primary" id="onboardStartBtn">Inizia</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>
