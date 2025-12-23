@@ -11,7 +11,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Analisi Arciere">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json?v=33">
     <link rel="apple-touch-icon" href="logo-pol.png">
     
     <!-- TensorFlow.js -->
@@ -2119,7 +2119,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 32 - Dicembre 2025</em>
+                    <em>Versione 33 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -4707,51 +4707,116 @@
         }
         
         // Renderizza scheletro standard su canvas
+        function normalizeKeypointsForRender(keypoints) {
+            if (!keypoints) return null;
+            return keypoints.map(kp => {
+                if (!kp) return null;
+                // Supporta formati diversi: {x,y,score}, {position:{x,y}, score}, ecc.
+                const x = (typeof kp.x === 'number') ? kp.x :
+                          (kp.position && typeof kp.position.x === 'number') ? kp.position.x :
+                          (kp.position && typeof kp.position[0] === 'number') ? kp.position[0] : null;
+                const y = (typeof kp.y === 'number') ? kp.y :
+                          (kp.position && typeof kp.position.y === 'number') ? kp.position.y :
+                          (kp.position && typeof kp.position[1] === 'number') ? kp.position[1] : null;
+                const score = (typeof kp.score === 'number') ? kp.score :
+                              (typeof kp.confidence === 'number') ? kp.confidence :
+                              (typeof kp.visibility === 'number') ? kp.visibility : 1;
+                const name = kp.name || kp.part || kp.id || kp.keypoint || null;
+                return (x == null || y == null) ? null : { x, y, score, name };
+            });
+        }
+
         function renderSkeletonOnCanvas(ctx, keypoints, width, height) {
+            keypoints = normalizeKeypointsForRender(keypoints);
             if (!keypoints || keypoints.length < 17) return;
-            
+
             ctx.save();
             if (state.flipVideo) {
                 ctx.translate(width, 0);
                 ctx.scale(-1, 1);
             }
-            
+
             const config = bowConfig[state.bowType];
             ctx.strokeStyle = config.color;
             ctx.fillStyle = config.color;
             ctx.lineWidth = 4;
             ctx.lineCap = 'round';
-            
-            // Connessioni scheletro
+
+            const minScore = 0.3;
+
+            // Se abbiamo nomi (BlazePose/MoveNet), usiamo connessioni per nome (più affidabile)
+            const hasNames = keypoints.some(kp => kp && kp.name);
+            if (hasNames) {
+                const byName = {};
+                keypoints.forEach(kp => { if (kp && kp.name) byName[kp.name] = kp; });
+
+                const connectionsByName = [
+                    ['left_shoulder', 'right_shoulder'],
+                    ['left_shoulder', 'left_elbow'],
+                    ['left_elbow', 'left_wrist'],
+                    ['right_shoulder', 'right_elbow'],
+                    ['right_elbow', 'right_wrist'],
+                    ['left_shoulder', 'left_hip'],
+                    ['right_shoulder', 'right_hip'],
+                    ['left_hip', 'right_hip'],
+                    ['left_hip', 'left_knee'],
+                    ['left_knee', 'left_ankle'],
+                    ['right_hip', 'right_knee'],
+                    ['right_knee', 'right_ankle']
+                ];
+
+                connectionsByName.forEach(([a, b]) => {
+                    const kp1 = byName[a];
+                    const kp2 = byName[b];
+                    if (kp1 && kp2 && kp1.score > minScore && kp2.score > minScore) {
+                        ctx.beginPath();
+                        ctx.moveTo(kp1.x, kp1.y);
+                        ctx.lineTo(kp2.x, kp2.y);
+                        ctx.stroke();
+                    }
+                });
+
+                keypoints.forEach(kp => {
+                    if (kp && kp.score > minScore) {
+                        ctx.beginPath();
+                        ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
+                        ctx.fill();
+                    }
+                });
+
+                ctx.restore();
+                return;
+            }
+
+            // Fallback COCO (BodyPix)
             const connections = [
                 [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],
                 [5, 11], [6, 12], [11, 12],
                 [11, 13], [13, 15], [12, 14], [14, 16]
             ];
-            
+
             connections.forEach(([i, j]) => {
                 const kp1 = keypoints[i];
                 const kp2 = keypoints[j];
-                if (kp1 && kp2 && kp1.score > 0.3 && kp2.score > 0.3) {
+                if (kp1 && kp2 && kp1.score > minScore && kp2.score > minScore) {
                     ctx.beginPath();
                     ctx.moveTo(kp1.x, kp1.y);
                     ctx.lineTo(kp2.x, kp2.y);
                     ctx.stroke();
                 }
             });
-            
-            // Punti
+
             keypoints.forEach(kp => {
-                if (kp && kp.score > 0.3) {
+                if (kp && kp.score > minScore) {
                     ctx.beginPath();
                     ctx.arc(kp.x, kp.y, 6, 0, 2 * Math.PI);
                     ctx.fill();
                 }
             });
-            
+
             ctx.restore();
         }
-        
+
         // Renderizza Holistic completo su canvas
         function renderHolisticOnCanvas(ctx, holisticData, width, height) {
             if (!holisticData || !holisticData.poseLandmarks) return;
@@ -6514,7 +6579,7 @@ document.getElementById('versionsModalClose').addEventListener('click', () => {
         // ============ SERVICE WORKER ============
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
+                navigator.serviceWorker.register('sw.js?v=33')
                     .then((registration) => {
                         console.log('SW registered:', registration.scope);
                         
