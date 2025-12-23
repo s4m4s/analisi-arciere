@@ -2078,6 +2078,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v31</strong> - Export video con AI in tempo reale (massima qualità), manuale PDF</p>
                     <p><strong>v30</strong> - Download elaborazioni con scheletro/griglia</p>
                     <p><strong>v29</strong> - Elaborazioni come sottoprodotti, fix griglia playback</p>
                     <p><strong>v28</strong> - Dropdown griglia, durata e note registrazioni, launcher semplificato</p>
@@ -2099,7 +2100,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 30 - Dicembre 2025</em>
+                    <em>Versione 31 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -4121,17 +4122,81 @@
             const elaboration = (recording.elaborations || []).find(e => e.id === elabId);
             if (!elaboration) return;
             
-            // Mostra progresso
+            const model = elaboration.model; // holistic, lightning, bodypix
+            
+            // Mostra progresso dettagliato
             const statusEl = document.createElement('div');
-            statusEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:2rem;border-radius:12px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);';
-            statusEl.innerHTML = '<p style="margin-bottom:1rem;font-weight:bold;">Generazione video in corso...</p><p id="exportProgress">0%</p>';
+            statusEl.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--bg-secondary);padding:2rem 3rem;border-radius:16px;z-index:9999;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.5);min-width:320px;';
+            statusEl.innerHTML = `
+                <p style="margin-bottom:0.5rem;font-weight:bold;font-size:1.1rem;">Generazione Video con AI</p>
+                <p style="margin-bottom:1rem;color:var(--text-muted);font-size:0.85rem;">Modello: ${model.toUpperCase()}</p>
+                <div style="background:var(--bg-tertiary);border-radius:8px;height:24px;overflow:hidden;margin-bottom:1rem;">
+                    <div id="exportProgressBar" style="background:var(--accent-current);height:100%;width:0%;transition:width 0.3s;"></div>
+                </div>
+                <p id="exportStatus" style="font-size:0.9rem;">Inizializzazione AI...</p>
+                <p id="exportDetails" style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem;"></p>
+                <button id="exportCancel" style="margin-top:1rem;padding:0.5rem 1.5rem;background:var(--danger);border:none;color:white;border-radius:8px;cursor:pointer;">Annulla</button>
+            `;
             document.body.appendChild(statusEl);
             
+            let cancelled = false;
+            document.getElementById('exportCancel').addEventListener('click', () => {
+                cancelled = true;
+            });
+            
+            const updateProgress = (percent, status, details = '') => {
+                document.getElementById('exportProgressBar').style.width = `${percent}%`;
+                document.getElementById('exportStatus').textContent = status;
+                document.getElementById('exportDetails').textContent = details;
+            };
+            
+            let exportDetector = null;
+            let exportHolistic = null;
+            let exportBodyPix = null;
+            
             try {
-                // Crea video temporaneo per leggere i frame
+                // Crea detector dedicato all'export con MASSIMA QUALITÀ
+                updateProgress(0, 'Caricamento modello AI...', 'Configurazione alta qualità');
+                
+                if (model === 'holistic') {
+                    exportHolistic = new Holistic({
+                        locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/holistic@0.5.1675471629/${file}`
+                    });
+                    exportHolistic.setOptions({
+                        modelComplexity: 2,        // MASSIMA qualità (0, 1, 2)
+                        smoothLandmarks: false,    // No smoothing per massima precisione
+                        enableSegmentation: false,
+                        refineFaceLandmarks: true, // Dettagli viso
+                        minDetectionConfidence: 0.5,
+                        minTrackingConfidence: 0.5
+                    });
+                    await exportHolistic.initialize();
+                    
+                } else if (model === 'bodypix') {
+                    exportBodyPix = await bodyPix.load({
+                        architecture: 'ResNet50',  // Più preciso di MobileNet
+                        outputStride: 16,
+                        quantBytes: 4              // Massima precisione
+                    });
+                    
+                } else {
+                    // Lightning - usa Thunder per massima qualità
+                    exportDetector = await poseDetection.createDetector(
+                        poseDetection.SupportedModels.MoveNet,
+                        { 
+                            modelType: poseDetection.movenet.modelType.SINGLEPOSE_THUNDER, // Thunder più preciso di Lightning
+                            enableSmoothing: false
+                        }
+                    );
+                }
+                
+                updateProgress(5, 'Preparazione video...');
+                
+                // Crea video temporaneo
                 const tempVideo = document.createElement('video');
                 tempVideo.src = recording.url;
                 tempVideo.muted = true;
+                tempVideo.playsInline = true;
                 
                 await new Promise((resolve, reject) => {
                     tempVideo.onloadedmetadata = resolve;
@@ -4144,7 +4209,15 @@
                 const fps = 30;
                 const totalFrames = Math.floor(duration * fps);
                 
-                // Crea canvas per renderizzare
+                // Stima tempo
+                const msPerFrame = model === 'holistic' ? 150 : (model === 'bodypix' ? 100 : 50);
+                const estimatedSeconds = Math.round((totalFrames * msPerFrame) / 1000);
+                const estimatedMin = Math.floor(estimatedSeconds / 60);
+                const estimatedSec = estimatedSeconds % 60;
+                
+                updateProgress(5, 'Preparazione canvas...', `${totalFrames} frame • Tempo stimato: ${estimatedMin}m ${estimatedSec}s`);
+                
+                // Canvas per rendering
                 const renderCanvas = document.createElement('canvas');
                 renderCanvas.width = width;
                 renderCanvas.height = height;
@@ -4152,9 +4225,11 @@
                 
                 // Setup MediaRecorder
                 const stream = renderCanvas.captureStream(fps);
+                const mimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9') 
+                    ? 'video/webm;codecs=vp9' : 'video/webm';
                 const mediaRecorder = new MediaRecorder(stream, { 
-                    mimeType: 'video/webm;codecs=vp9',
-                    videoBitsPerSecond: 5000000
+                    mimeType: mimeType,
+                    videoBitsPerSecond: 8000000 // 8 Mbps per alta qualità
                 });
                 
                 const chunks = [];
@@ -4164,13 +4239,24 @@
                 
                 mediaRecorder.start(100);
                 
+                const startTime = Date.now();
+                
                 // Processa ogni frame
                 for (let frameNum = 0; frameNum < totalFrames; frameNum++) {
+                    if (cancelled) {
+                        mediaRecorder.stop();
+                        throw new Error('Annullato dall\'utente');
+                    }
+                    
                     const targetTime = frameNum / fps;
                     tempVideo.currentTime = targetTime;
                     
                     await new Promise(resolve => {
-                        tempVideo.onseeked = () => setTimeout(resolve, 30);
+                        const onSeeked = () => {
+                            tempVideo.removeEventListener('seeked', onSeeked);
+                            setTimeout(resolve, 20);
+                        };
+                        tempVideo.addEventListener('seeked', onSeeked);
                     });
                     
                     // Disegna frame video
@@ -4182,49 +4268,71 @@
                     renderCtx.drawImage(tempVideo, 0, 0, width, height);
                     renderCtx.restore();
                     
-                    // Disegna griglia se attiva
-                    if (elaboration.settings?.showGrid) {
-                        const density = elaboration.settings.gridDensity || 16;
-                        const cellWidth = width / density;
-                        const cellHeight = height / density;
+                    // Analisi AI in tempo reale
+                    let analysisResult = null;
+                    
+                    if (model === 'holistic' && exportHolistic) {
+                        analysisResult = await new Promise((resolve) => {
+                            exportHolistic.onResults((results) => {
+                                resolve(results);
+                            });
+                            exportHolistic.send({ image: tempVideo });
+                        });
                         
-                        renderCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-                        renderCtx.lineWidth = 1;
+                        if (analysisResult && analysisResult.poseLandmarks) {
+                            renderHolisticOnCanvas(renderCtx, {
+                                poseLandmarks: analysisResult.poseLandmarks,
+                                leftHandLandmarks: analysisResult.leftHandLandmarks,
+                                rightHandLandmarks: analysisResult.rightHandLandmarks,
+                                faceLandmarks: analysisResult.faceLandmarks
+                            }, width, height);
+                        }
                         
-                        for (let i = 1; i < density; i++) {
-                            renderCtx.beginPath();
-                            renderCtx.moveTo(i * cellWidth, 0);
-                            renderCtx.lineTo(i * cellWidth, height);
-                            renderCtx.stroke();
-                            
-                            renderCtx.beginPath();
-                            renderCtx.moveTo(0, i * cellHeight);
-                            renderCtx.lineTo(width, i * cellHeight);
-                            renderCtx.stroke();
+                    } else if (model === 'bodypix' && exportBodyPix) {
+                        const segmentation = await exportBodyPix.segmentPerson(tempVideo, {
+                            flipHorizontal: false,
+                            internalResolution: 'high',
+                            segmentationThreshold: 0.7
+                        });
+                        
+                        if (segmentation && segmentation.allPoses && segmentation.allPoses.length > 0) {
+                            renderSkeletonOnCanvas(renderCtx, segmentation.allPoses[0].keypoints, width, height);
+                        }
+                        
+                    } else if (exportDetector) {
+                        const poses = await exportDetector.estimatePoses(tempVideo);
+                        if (poses.length > 0) {
+                            renderSkeletonOnCanvas(renderCtx, poses[0].keypoints, width, height);
                         }
                     }
                     
-                    // Disegna scheletro se ci sono dati per questo frame
-                    const frameData = elaboration.frameData[frameNum];
-                    if (frameData) {
-                        // Se è Holistic, usa il disegno completo
-                        if (frameData.holisticData) {
-                            renderHolisticOnCanvas(renderCtx, frameData.holisticData, width, height);
-                        } else if (frameData.keypoints) {
-                            // Altrimenti disegna scheletro standard
-                            renderSkeletonOnCanvas(renderCtx, frameData.keypoints, width, height);
-                        }
+                    // Disegna griglia se attiva
+                    if (elaboration.settings?.showGrid) {
+                        const density = elaboration.settings.gridDensity || 16;
+                        renderGridOnCanvas(renderCtx, width, height, density);
                     }
                     
                     // Aggiorna progresso
                     const progress = Math.round(((frameNum + 1) / totalFrames) * 100);
-                    document.getElementById('exportProgress').textContent = `${progress}%`;
+                    const elapsed = (Date.now() - startTime) / 1000;
+                    const avgTimePerFrame = elapsed / (frameNum + 1);
+                    const remaining = Math.round(avgTimePerFrame * (totalFrames - frameNum - 1));
+                    const remMin = Math.floor(remaining / 60);
+                    const remSec = remaining % 60;
                     
-                    // Yield per non bloccare UI
-                    if (frameNum % 10 === 0) {
+                    updateProgress(
+                        5 + (progress * 0.9), // 5-95%
+                        `Elaborazione frame ${frameNum + 1}/${totalFrames}`,
+                        `${progress}% • Rimanente: ${remMin}m ${remSec}s`
+                    );
+                    
+                    // Yield per aggiornare UI
+                    if (frameNum % 5 === 0) {
                         await new Promise(r => setTimeout(r, 1));
                     }
                 }
+                
+                updateProgress(95, 'Finalizzazione video...');
                 
                 // Ferma recording
                 mediaRecorder.stop();
@@ -4233,12 +4341,14 @@
                     mediaRecorder.onstop = resolve;
                 });
                 
+                updateProgress(98, 'Preparazione download...');
+                
                 // Crea blob e scarica
                 const blob = new Blob(chunks, { type: 'video/webm' });
                 const url = URL.createObjectURL(blob);
                 
                 const link = document.createElement('a');
-                const filename = `${recording.name.replace(/[^a-z0-9]/gi, '_')}_${elaboration.modelLabel}_${elabId}.webm`;
+                const filename = `${recording.name.replace(/[^a-z0-9]/gi, '_')}_${elaboration.modelLabel}_HQ.webm`;
                 link.href = url;
                 link.download = filename;
                 document.body.appendChild(link);
@@ -4247,11 +4357,43 @@
                 
                 URL.revokeObjectURL(url);
                 
+                updateProgress(100, 'Completato!', 'Download avviato');
+                await new Promise(r => setTimeout(r, 1000));
+                
             } catch (error) {
                 console.error('Errore export elaborazione:', error);
-                alert('Errore durante la generazione del video');
+                if (!cancelled) {
+                    alert('Errore durante la generazione del video: ' + error.message);
+                }
             } finally {
+                // Cleanup detector
+                try {
+                    if (exportDetector) exportDetector.dispose();
+                    if (exportHolistic) exportHolistic.close();
+                } catch(e) {}
+                
                 document.body.removeChild(statusEl);
+            }
+        }
+        
+        // Renderizza griglia su canvas
+        function renderGridOnCanvas(ctx, width, height, density) {
+            const cellWidth = width / density;
+            const cellHeight = height / density;
+            
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.lineWidth = 1;
+            
+            for (let i = 1; i < density; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * cellWidth, 0);
+                ctx.lineTo(i * cellWidth, height);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, i * cellHeight);
+                ctx.lineTo(width, i * cellHeight);
+                ctx.stroke();
             }
         }
         
