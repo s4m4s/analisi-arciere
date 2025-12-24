@@ -1,7 +1,7 @@
-// Analisi Arciere - Service Worker v34
+// Analisi Arciere - Service Worker v35
 // Polisportiva Gonone Dorgali - Tiro con l'Arco
 
-const CACHE_NAME = 'analisi-arciere-v34';
+const CACHE_NAME = 'analisi-arciere-v35';
 
 // File dell'app da cachare
 const APP_FILES = [
