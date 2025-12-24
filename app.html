@@ -2101,7 +2101,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 35 - Dicembre 2025</em>
+                    <em>Versione 32 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -4515,34 +4515,7 @@
         }
         
         // Renderizza scheletro standard su canvas
-        
-        // Normalizza keypoints da vari modelli (MoveNet/BlazePose/BodyPix ecc.)
-        // Converte sempre in: {x, y, score, name}
-        function normalizeKeypointsForRender(keypoints, width, height) {
-            if (!Array.isArray(keypoints)) return keypoints;
-            return keypoints.map((kp) => {
-                if (!kp) return kp;
-                let x = (typeof kp.x === 'number') ? kp.x : (kp.position && typeof kp.position.x === 'number' ? kp.position.x : undefined);
-                let y = (typeof kp.y === 'number') ? kp.y : (kp.position && typeof kp.position.y === 'number' ? kp.position.y : undefined);
-                // fallback strutture meno comuni
-                if (x === undefined && kp.keypoint && typeof kp.keypoint.x === 'number') x = kp.keypoint.x;
-                if (y === undefined && kp.keypoint && typeof kp.keypoint.y === 'number') y = kp.keypoint.y;
-
-                let score = (typeof kp.score === 'number') ? kp.score : (typeof kp.confidence === 'number' ? kp.confidence : (kp.keypoint && typeof kp.keypoint.score === 'number' ? kp.keypoint.score : 1));
-                let name = kp.name || kp.part || (kp.keypoint && kp.keypoint.name) || kp.label || null;
-
-                // Se sembra normalizzato (0..1), scala in pixel
-                if (typeof x === 'number' && typeof y === 'number' && width && height) {
-                    if (x >= 0 && x <= 1.5 && y >= 0 && y <= 1.5) {
-                        x = x * width;
-                        y = y * height;
-                    }
-                }
-                return { ...kp, x, y, score, name };
-            });
-        }
-
-function renderSkeletonOnCanvas(ctx, normalizeKeypointsForRender(keypoints, width, height), width, height) {
+        function renderSkeletonOnCanvas(ctx, keypoints, width, height) {
             if (!keypoints || keypoints.length < 17) return;
             
             ctx.save();
@@ -6318,7 +6291,7 @@ function renderSkeletonOnCanvas(ctx, normalizeKeypointsForRender(keypoints, widt
         // ============ SERVICE WORKER ============
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js?v=35')
+                navigator.serviceWorker.register('sw.js')
                     .then((registration) => {
                         console.log('SW registered:', registration.scope);
                         

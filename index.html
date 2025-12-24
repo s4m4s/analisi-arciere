@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Analisi Arciere - Polisportiva Gonone Dorgali</title>
-    <link rel="manifest" href="manifest.json?v=35">
+    <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" href="logo-pol.png">
     <link rel="apple-touch-icon" href="logo-pol.png">
     <meta name="theme-color" content="#1a1a2e">
@@ -250,7 +250,7 @@
     <script>
         // Service Worker registration
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js?v=35')
+            navigator.serviceWorker.register('sw.js')
                 .then(reg => console.log('SW registered'))
                 .catch(err => console.log('SW registration failed', err));
         }
