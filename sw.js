@@ -1,7 +1,7 @@
-// Analisi Arciere - Service Worker v30
+// Analisi Arciere - Service Worker v35
 // Polisportiva Gonone Dorgali - Tiro con l'Arco
 
-const CACHE_NAME = 'analisi-arciere-v30';
+const CACHE_NAME = 'analisi-arciere-v35';
 
 // File dell'app da cachare
 const APP_FILES = [
@@ -26,14 +26,13 @@ const EXTERNAL_LIBS = [
 
 // Install - cache tutti i file
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v22...');
+  console.log('[SW] Installing v35...');
   
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then(async (cache) => {
         console.log('[SW] Caching app files...');
         
-        // Cache app files
         for (const url of APP_FILES) {
           try {
             await cache.add(url);
@@ -43,7 +42,6 @@ self.addEventListener('install', (event) => {
           }
         }
         
-        // Cache external libs
         for (const url of EXTERNAL_LIBS) {
           try {
             const response = await fetch(url, { mode: 'cors' });
@@ -64,7 +62,7 @@ self.addEventListener('install', (event) => {
 
 // Activate - pulisce vecchie cache
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating...');
+  console.log('[SW] Activating v35...');
   
   event.waitUntil(
     caches.keys()
@@ -85,70 +83,57 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch - Cache First strategy
+// Fetch - Network First per HTML, Cache First per il resto
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   
-  // Skip non-GET requests
-  if (event.request.method !== 'GET') {
+  if (event.request.method !== 'GET') return;
+  if (url.pathname.startsWith('/api/')) return;
+  if (!url.protocol.startsWith('http')) return;
+  
+  // Network First per HTML
+  if (event.request.headers.get('accept')?.includes('text/html') ||
+      url.pathname.endsWith('.html')) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          const responseToCache = response.clone();
+          caches.open(CACHE_NAME).then((cache) => {
+            cache.put(event.request, responseToCache);
+          });
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
     return;
   }
   
-  // Skip API calls to local server
-  if (url.pathname.startsWith('/api/') || url.hostname === '192.168.1.100') {
-    return;
-  }
-  
-  // Skip chrome-extension and other non-http
-  if (!url.protocol.startsWith('http')) {
-    return;
-  }
-  
+  // Cache First per il resto
   event.respondWith(
     caches.match(event.request)
       .then((cachedResponse) => {
-        if (cachedResponse) {
-          return cachedResponse;
-        }
+        if (cachedResponse) return cachedResponse;
         
-        // Not in cache, fetch from network
         return fetch(event.request)
           .then((response) => {
-            // Don't cache bad responses
-            if (!response || response.status !== 200) {
-              return response;
-            }
+            if (!response || response.status !== 200) return response;
             
-            // Clone and cache dynamically loaded resources
             const responseToCache = response.clone();
-            
-            caches.open(CACHE_NAME)
-              .then((cache) => {
-                // Cache TensorFlow model files
-                if (url.href.includes('tfhub.dev') || 
-                    url.href.includes('kaggle') ||
-                    url.href.includes('storage.googleapis.com') ||
-                    url.href.includes('jsdelivr.net') ||
-                    url.href.includes('mediapipe')) {
-                  cache.put(event.request, responseToCache);
-                }
-              });
+            caches.open(CACHE_NAME).then((cache) => {
+              if (url.href.includes('tfhub.dev') || 
+                  url.href.includes('storage.googleapis.com') ||
+                  url.href.includes('jsdelivr.net') ||
+                  url.href.includes('mediapipe')) {
+                cache.put(event.request, responseToCache);
+              }
+            });
             
             return response;
-          })
-          .catch((err) => {
-            console.error('[SW] Fetch failed:', url.href);
-            
-            // Offline fallback for HTML pages
-            if (event.request.headers.get('accept')?.includes('text/html')) {
-              return caches.match('./app.html');
-            }
           });
       })
   );
 });
 
-// Listen for messages
 self.addEventListener('message', (event) => {
   if (event.data === 'skipWaiting') {
     self.skipWaiting();
