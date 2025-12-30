@@ -2289,7 +2289,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 36b - Dicembre 2025</em>
+                    <em>Versione 37 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2800,6 +2800,7 @@
                                 <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
                                 <circle cx="12" cy="12" r="3"/>
                             </svg>
+                            <span class="analyze-text">AI</span>
                         </button>
                         <div class="analyze-dropdown" id="analyzeDropdown">
                             <button class="analyze-option" data-model="holistic">Holistic</button>
@@ -5314,9 +5315,18 @@
             if (state.isAnalyzing) return;
             
             // Trova la registrazione corrente
-            const currentRecording = state.recordings.find(r => r.url === elements.playbackVideo.src);
+            let currentRecording = state.currentRecording;
+            
+            // Fallback: cerca per URL
             if (!currentRecording) {
-                alert('Nessuna registrazione selezionata');
+                currentRecording = state.recordings.find(r => r.url === elements.playbackVideo.src);
+            }
+            
+            if (!currentRecording) {
+                console.error('Nessuna registrazione trovata. state.currentRecording:', state.currentRecording);
+                console.error('playbackVideo.src:', elements.playbackVideo.src);
+                console.error('recordings:', state.recordings.map(r => r.url));
+                alert('Nessuna registrazione selezionata. Seleziona prima un video.');
                 return;
             }
             
