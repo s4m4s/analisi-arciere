@@ -770,40 +770,30 @@
             border-radius: 16px;
             overflow: hidden;
             border: 1px solid var(--border-color);
-            display: flex;
-            flex-direction: column;
         }
         
         .video-container {
             position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 fisso */
             background: #000;
-            overflow: hidden;
-            flex-shrink: 0;
         }
         
-        #videoElement, #playbackVideo {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: contain;
+        #videoElement {
+            display: block;
+            width: 100%;
         }
         
         #playbackVideo {
             display: none;
+            width: 100%;
         }
         
         #canvas {
             position: absolute;
             top: 0;
             left: 0;
-            width: 100% !important;
-            height: 100% !important;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-            object-fit: contain;
         }
         
         /* Mode Indicator */
@@ -2299,7 +2289,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 36 - Dicembre 2025</em>
+                    <em>Versione 36b - Dicembre 2025</em>
                 </p>
             </div>
         </div>

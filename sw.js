@@ -1,10 +1,10 @@
-// Analisi Arciere - Service Worker v36
-const CACHE_NAME = 'analisi-arciere-v36';
+// Analisi Arciere - Service Worker v36b
+const CACHE_NAME = 'analisi-arciere-v36b';
 
 const APP_FILES = ['./', './index.html', './app.html', './manifest.json', './logo-pol.png'];
 
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing v36...');
+  console.log('[SW] Installing v36b...');
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       for (const url of APP_FILES) {
@@ -15,7 +15,7 @@ self.addEventListener('install', (event) => {
 });
 
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating v36...');
+  console.log('[SW] Activating v36b...');
   event.waitUntil(
     caches.keys().then((names) => {
       return Promise.all(names.map((name) => {
