@@ -57,52 +57,166 @@
             overflow-x: hidden;
         }
         
-        /* Header */
+        /* Header - Versione Compatta */
         .header {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border-color);
-            padding: 1rem 1.5rem;
+            padding: 0.5rem 1rem;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 100;
+            height: 50px;
         }
         
         .logo {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.5rem;
+            font-size: 1.2rem;
             font-weight: 600;
             letter-spacing: 2px;
             text-transform: uppercase;
             display: flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 0.5rem;
         }
         
         .header-logo {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
+            border-radius: 6px;
+        }
+        
+        /* Header Hamburger Menu */
+        .header-hamburger {
             width: 40px;
             height: 40px;
-            object-fit: contain;
+            border: none;
+            background: var(--bg-tertiary);
             border-radius: 8px;
-        }
-        
-        .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--accent-current);
-            border-radius: 8px;
+            cursor: pointer;
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: background 0.3s ease;
+            gap: 5px;
+            padding: 10px;
         }
         
-        .logo-icon svg {
+        .header-hamburger span {
+            display: block;
             width: 20px;
-            height: 20px;
-            fill: white;
+            height: 2px;
+            background: var(--text-primary);
+            border-radius: 1px;
+            transition: all 0.3s ease;
+        }
+        
+        .header-hamburger.open span:nth-child(1) {
+            transform: rotate(45deg) translate(5px, 5px);
+        }
+        
+        .header-hamburger.open span:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .header-hamburger.open span:nth-child(3) {
+            transform: rotate(-45deg) translate(5px, -5px);
+        }
+        
+        /* Header Dropdown Menu */
+        .header-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            min-width: 280px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            z-index: 200;
+        }
+        
+        .header-dropdown.open {
+            display: block;
+        }
+        
+        .header-menu-section {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .header-menu-section:last-child {
+            margin-bottom: 0;
+            padding-bottom: 0;
+            border-bottom: none;
+        }
+        
+        .header-menu-title {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+        
+        .header-menu-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        
+        .header-menu-btn {
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-color);
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.8rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .header-menu-btn:hover {
+            background: var(--bg-primary);
+        }
+        
+        .header-menu-btn.active {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .header-menu-btn.icon-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .header-menu-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+        
+        /* Athlete display in header */
+        .header-athlete {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .header-athlete-name {
+            font-family: 'Oswald', sans-serif;
+            color: var(--accent-current);
         }
         
         /* Bow Type Selector */
@@ -841,8 +955,8 @@
         .playback-controls {
             display: none;
             flex-direction: column;
-            gap: 1rem;
-            padding: 1rem 1.5rem;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
             background: var(--bg-tertiary);
         }
         
@@ -882,15 +996,64 @@
         .playback-buttons {
             display: flex;
             align-items: center;
-            justify-content: center;
-            gap: 1rem;
+            justify-content: flex-start;
+            gap: 0.4rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        .playback-buttons::-webkit-scrollbar {
+            height: 3px;
+        }
+        
+        .playback-buttons::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 2px;
+        }
+        
+        .playback-buttons::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+        
+        .playback-buttons .control-btn {
+            width: 40px;
+            height: 40px;
+            flex-shrink: 0;
+        }
+        
+        .playback-buttons .control-btn.primary {
+            width: 48px;
+            height: 48px;
+        }
+        
+        .playback-buttons .control-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .frame-counter {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 60px;
+            text-align: center;
         }
         
         .speed-control {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            gap: 0.25rem;
+            flex-shrink: 0;
             margin-left: auto;
+        }
+        
+        .speed-btn {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.7rem;
         }
         
         /* Controlli Griglia Playback */
@@ -1638,7 +1801,26 @@
         
         .video-section:fullscreen .playback-controls,
         .video-section:-webkit-full-screen .playback-controls {
-            display: none !important;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: rgba(20, 20, 22, 0.95) !important;
+            backdrop-filter: blur(10px) !important;
+            z-index: 998 !important;
+            padding: 0.75rem 1rem !important;
+            border-top: 1px solid var(--border-color) !important;
+        }
+        
+        .video-section:fullscreen .playback-controls .playback-buttons,
+        .video-section:-webkit-full-screen .playback-controls .playback-buttons {
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+        
+        .video-section:fullscreen .playback-controls .speed-control,
+        .video-section:-webkit-full-screen .playback-controls .speed-control {
+            display: flex;
         }
         
         /* Menu Hamburger (solo in fullscreen) */
@@ -2078,6 +2260,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v33</strong> - UI compatta: header con hamburger, playback controls in fullscreen, fix deformazione</p>
                     <p><strong>v32</strong> - Export video a 3 fasi (estrazione→analisi→composizione), più stabile</p>
                     <p><strong>v31</strong> - Export video con AI in tempo reale (massima qualità), manuale PDF</p>
                     <p><strong>v30</strong> - Download elaborazioni con scheletro/griglia</p>
@@ -2101,7 +2284,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 32 - Dicembre 2025</em>
+                    <em>Versione 33 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2265,33 +2448,64 @@
             Analisi Arciere
         </div>
         
-        <div class="bow-selector">
-            <button class="bow-btn active" data-bow="olympic">Olimpico</button>
-            <button class="bow-btn" data-bow="compound">Compound</button>
-            <button class="bow-btn" data-bow="barebow">Nudo</button>
-            <button class="settings-gear-btn" id="settingsGearBtn" title="Configura parametri">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
-                </svg>
-            </button>
+        <div class="header-athlete">
+            <span id="currentAthleteName">Nessun atleta</span>
         </div>
         
-        <button class="athlete-btn" id="athleteBtn" title="Gestione Atleti">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                <circle cx="12" cy="7" r="4"/>
-            </svg>
-            <span id="currentAthleteName">Nessun atleta</span>
-        </button>
-        
-        <button class="help-btn" id="helpBtn" title="Manuale d'uso">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
-                <line x1="12" y1="17" x2="12.01" y2="17"/>
-            </svg>
-        </button>
+        <div style="position: relative;">
+            <button class="header-hamburger" id="headerHamburger">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+            
+            <div class="header-dropdown" id="headerDropdown">
+                <div class="header-menu-section">
+                    <div class="header-menu-title">Tipo Arco</div>
+                    <div class="header-menu-buttons">
+                        <button class="header-menu-btn hdr-bow-btn active" data-bow="olympic">Olimpico</button>
+                        <button class="header-menu-btn hdr-bow-btn" data-bow="compound">Compound</button>
+                        <button class="header-menu-btn hdr-bow-btn" data-bow="barebow">Nudo</button>
+                    </div>
+                </div>
+                
+                <div class="header-menu-section">
+                    <div class="header-menu-title">Mano Arco</div>
+                    <div class="header-menu-buttons">
+                        <button class="header-menu-btn hdr-stance-btn" data-stance="left">← Mancino</button>
+                        <button class="header-menu-btn hdr-stance-btn active" data-stance="right">Destro →</button>
+                    </div>
+                </div>
+                
+                <div class="header-menu-section">
+                    <div class="header-menu-title">Azioni</div>
+                    <div class="header-menu-buttons">
+                        <button class="header-menu-btn icon-btn" id="hdrAthleteBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            Atleti
+                        </button>
+                        <button class="header-menu-btn icon-btn" id="hdrSettingsBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/>
+                            </svg>
+                            Parametri
+                        </button>
+                        <button class="header-menu-btn icon-btn" id="hdrHelpBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/>
+                                <line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            Manuale
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </header>
     
     <!-- Main Content -->
@@ -6211,14 +6425,74 @@
                 document.getElementById('currentAthleteName').textContent = currentAthlete.name;
             }
             
+            // Header hamburger menu
+            const headerHamburger = document.getElementById('headerHamburger');
+            const headerDropdown = document.getElementById('headerDropdown');
+            
+            headerHamburger.addEventListener('click', (e) => {
+                e.stopPropagation();
+                headerHamburger.classList.toggle('open');
+                headerDropdown.classList.toggle('open');
+            });
+            
+            // Close header dropdown on outside click
+            document.addEventListener('click', (e) => {
+                if (!headerDropdown.contains(e.target) && !headerHamburger.contains(e.target)) {
+                    headerHamburger.classList.remove('open');
+                    headerDropdown.classList.remove('open');
+                }
+            });
+            
+            // Header bow buttons
+            document.querySelectorAll('.hdr-bow-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.hdr-bow-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.bowType = btn.dataset.bow;
+                    document.documentElement.style.setProperty('--accent-current', `var(--accent-${state.bowType})`);
+                    // Sync con fullscreen menu
+                    document.querySelectorAll('.fs-bow-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.bow === state.bowType);
+                    });
+                });
+            });
+            
+            // Header stance buttons
+            document.querySelectorAll('.hdr-stance-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.hdr-stance-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.archerPosition = btn.dataset.stance;
+                    // Sync con fullscreen menu
+                    document.querySelectorAll('.fs-stance-btn').forEach(b => {
+                        b.classList.toggle('active', b.dataset.stance === state.archerPosition);
+                    });
+                });
+            });
+            
+            // Header menu buttons
+            document.getElementById('hdrSettingsBtn').addEventListener('click', () => {
+                headerDropdown.classList.remove('open');
+                headerHamburger.classList.remove('open');
+                openSettingsModal();
+            });
+            document.getElementById('hdrAthleteBtn').addEventListener('click', () => {
+                headerDropdown.classList.remove('open');
+                headerHamburger.classList.remove('open');
+                openAthletesModal();
+            });
+            document.getElementById('hdrHelpBtn').addEventListener('click', () => {
+                headerDropdown.classList.remove('open');
+                headerHamburger.classList.remove('open');
+                document.getElementById('manualModal').classList.add('open');
+            });
+            
             // Settings modal events
-            document.getElementById('settingsGearBtn').addEventListener('click', openSettingsModal);
             document.getElementById('settingsModalClose').addEventListener('click', closeSettingsModal);
             document.getElementById('settingsSave').addEventListener('click', saveSettings);
             document.getElementById('settingsReset').addEventListener('click', resetSettings);
             
             // Athletes modal - direct access (no PIN)
-            document.getElementById('athleteBtn').addEventListener('click', openAthletesModal);
             document.getElementById('pinModalClose').addEventListener('click', closePinModal);
             document.getElementById('setPinModalClose').addEventListener('click', closeSetPinModal);
             document.getElementById('setPinSave').addEventListener('click', setNewPin);
@@ -6235,9 +6509,6 @@
             document.getElementById('athleteDeselect').addEventListener('click', deselectAthlete);
             
             // Manual modal events
-            document.getElementById('helpBtn').addEventListener('click', () => {
-                document.getElementById('manualModal').classList.add('open');
-            });
             document.getElementById('manualModalClose').addEventListener('click', () => {
                 document.getElementById('manualModal').classList.remove('open');
             });
