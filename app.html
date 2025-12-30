@@ -71,11 +71,17 @@
             height: 50px;
         }
         
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
         .logo {
             font-family: 'Oswald', sans-serif;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: 600;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
             text-transform: uppercase;
             display: flex;
             align-items: center;
@@ -91,8 +97,8 @@
         
         /* Header Hamburger Menu */
         .header-hamburger {
-            width: 40px;
-            height: 40px;
+            width: 36px;
+            height: 36px;
             border: none;
             background: var(--bg-tertiary);
             border-radius: 8px;
@@ -101,13 +107,13 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 5px;
-            padding: 10px;
+            gap: 4px;
+            padding: 8px;
         }
         
         .header-hamburger span {
             display: block;
-            width: 20px;
+            width: 18px;
             height: 2px;
             background: var(--text-primary);
             border-radius: 1px;
@@ -115,7 +121,7 @@
         }
         
         .header-hamburger.open span:nth-child(1) {
-            transform: rotate(45deg) translate(5px, 5px);
+            transform: rotate(45deg) translate(4px, 4px);
         }
         
         .header-hamburger.open span:nth-child(2) {
@@ -123,7 +129,7 @@
         }
         
         .header-hamburger.open span:nth-child(3) {
-            transform: rotate(-45deg) translate(5px, -5px);
+            transform: rotate(-45deg) translate(4px, -4px);
         }
         
         /* Header Dropdown Menu */
@@ -131,7 +137,7 @@
             display: none;
             position: absolute;
             top: 100%;
-            right: 0;
+            left: 0;
             background: var(--bg-secondary);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -139,6 +145,7 @@
             min-width: 280px;
             box-shadow: 0 8px 32px rgba(0,0,0,0.3);
             z-index: 200;
+            margin-top: 0.5rem;
         }
         
         .header-dropdown.open {
@@ -207,15 +214,8 @@
         
         /* Athlete display in header */
         .header-athlete {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-        
-        .header-athlete-name {
             font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
             color: var(--accent-current);
         }
         
@@ -996,25 +996,9 @@
         .playback-buttons {
             display: flex;
             align-items: center;
-            justify-content: flex-start;
-            gap: 0.4rem;
-            overflow-x: auto;
-            padding-bottom: 0.25rem;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .playback-buttons::-webkit-scrollbar {
-            height: 3px;
-        }
-        
-        .playback-buttons::-webkit-scrollbar-track {
-            background: var(--bg-primary);
-            border-radius: 2px;
-        }
-        
-        .playback-buttons::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 2px;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
         }
         
         .playback-buttons .control-btn {
@@ -1046,14 +1030,16 @@
         .speed-control {
             display: flex;
             align-items: center;
+            justify-content: center;
             gap: 0.25rem;
-            flex-shrink: 0;
-            margin-left: auto;
+            flex-wrap: wrap;
+            width: 100%;
+            margin-top: 0.25rem;
         }
         
         .speed-btn {
-            padding: 0.3rem 0.5rem;
-            font-size: 0.7rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.75rem;
         }
         
         /* Controlli Griglia Playback */
@@ -2260,6 +2246,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v34</strong> - Header hamburger a fianco titolo, fix deformazione video, fullscreen in playback</p>
                     <p><strong>v33</strong> - UI compatta: header con hamburger, playback controls in fullscreen, fix deformazione</p>
                     <p><strong>v32</strong> - Export video a 3 fasi (estrazione→analisi→composizione), più stabile</p>
                     <p><strong>v31</strong> - Export video con AI in tempo reale (massima qualità), manuale PDF</p>
@@ -2284,7 +2271,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 33 - Dicembre 2025</em>
+                    <em>Versione 34 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2443,41 +2430,38 @@
     
     <!-- Header -->
     <header class="header">
-        <div class="logo">
-            <img src="logo-pol.png" alt="Logo" class="header-logo">
-            Analisi Arciere
-        </div>
-        
-        <div class="header-athlete">
-            <span id="currentAthleteName">Nessun atleta</span>
-        </div>
-        
-        <div style="position: relative;">
-            <button class="header-hamburger" id="headerHamburger">
-                <span></span>
-                <span></span>
-                <span></span>
-            </button>
+        <div class="header-left">
+            <div class="logo">
+                <img src="logo-pol.png" alt="Logo" class="header-logo">
+                Analisi Arciere
+            </div>
             
-            <div class="header-dropdown" id="headerDropdown">
-                <div class="header-menu-section">
-                    <div class="header-menu-title">Tipo Arco</div>
-                    <div class="header-menu-buttons">
-                        <button class="header-menu-btn hdr-bow-btn active" data-bow="olympic">Olimpico</button>
-                        <button class="header-menu-btn hdr-bow-btn" data-bow="compound">Compound</button>
-                        <button class="header-menu-btn hdr-bow-btn" data-bow="barebow">Nudo</button>
-                    </div>
-                </div>
+            <div style="position: relative;">
+                <button class="header-hamburger" id="headerHamburger">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
                 
-                <div class="header-menu-section">
-                    <div class="header-menu-title">Mano Arco</div>
-                    <div class="header-menu-buttons">
-                        <button class="header-menu-btn hdr-stance-btn" data-stance="left">← Mancino</button>
-                        <button class="header-menu-btn hdr-stance-btn active" data-stance="right">Destro →</button>
+                <div class="header-dropdown" id="headerDropdown">
+                    <div class="header-menu-section">
+                        <div class="header-menu-title">Tipo Arco</div>
+                        <div class="header-menu-buttons">
+                            <button class="header-menu-btn hdr-bow-btn active" data-bow="olympic">Olimpico</button>
+                            <button class="header-menu-btn hdr-bow-btn" data-bow="compound">Compound</button>
+                            <button class="header-menu-btn hdr-bow-btn" data-bow="barebow">Nudo</button>
+                        </div>
                     </div>
-                </div>
-                
-                <div class="header-menu-section">
+                    
+                    <div class="header-menu-section">
+                        <div class="header-menu-title">Mano Arco</div>
+                        <div class="header-menu-buttons">
+                            <button class="header-menu-btn hdr-stance-btn" data-stance="left">← Mancino</button>
+                            <button class="header-menu-btn hdr-stance-btn active" data-stance="right">Destro →</button>
+                        </div>
+                    </div>
+                    
+                    <div class="header-menu-section">
                     <div class="header-menu-title">Azioni</div>
                     <div class="header-menu-buttons">
                         <button class="header-menu-btn icon-btn" id="hdrAthleteBtn">
@@ -2505,6 +2489,11 @@
                     </div>
                 </div>
             </div>
+        </div>
+        </div>
+        
+        <div class="header-athlete">
+            <span id="currentAthleteName">Nessun atleta</span>
         </div>
     </header>
     
@@ -2761,6 +2750,12 @@
                             <button class="analyze-option" data-model="bodypix">BodyPix</button>
                         </div>
                     </div>
+                    
+                    <button class="control-btn" id="playbackFullscreenBtn" title="Schermo intero">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M8 3H5a2 2 0 00-2 2v3M21 8V5a2 2 0 00-2-2h-3M3 16v3a2 2 0 002 2h3M16 21h3a2 2 0 002-2v-3"/>
+                        </svg>
+                    </button>
                     
                     <div class="speed-control">
                         <button class="speed-btn" data-speed="0.1">0.1x</button>
@@ -5857,6 +5852,16 @@
             
             // Fullscreen
             elements.fullscreenBtn.addEventListener('click', () => {
+                const container = document.querySelector('.video-section');
+                if (document.fullscreenElement) {
+                    document.exitFullscreen();
+                } else {
+                    container.requestFullscreen();
+                }
+            });
+            
+            // Playback Fullscreen button
+            document.getElementById('playbackFullscreenBtn').addEventListener('click', () => {
                 const container = document.querySelector('.video-section');
                 if (document.fullscreenElement) {
                     document.exitFullscreen();
