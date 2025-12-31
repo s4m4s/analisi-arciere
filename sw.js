@@ -1,5 +1,5 @@
-// Service Worker v37
-const CACHE_NAME = 'analisi-arciere-v37';
+// Service Worker v38
+const CACHE_NAME = 'analisi-arciere-v38';
 const APP_FILES = ['./', './index.html', './app.html', './manifest.json', './logo-pol.png'];
 
 self.addEventListener('install', (e) => {

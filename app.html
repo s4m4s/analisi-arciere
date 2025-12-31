@@ -1369,6 +1369,100 @@
             border-color: var(--accent-current);
         }
         
+        /* Server Mode Selector */
+        .server-mode-selector {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .server-mode-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.75rem 0.5rem;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .server-mode-btn:hover {
+            border-color: var(--text-muted);
+        }
+        
+        .server-mode-btn.active {
+            border-color: var(--accent-current);
+            background: rgba(37, 99, 235, 0.1);
+            color: var(--text-primary);
+        }
+        
+        .server-mode-btn .mode-icon {
+            font-size: 1.25rem;
+        }
+        
+        .server-mode-btn .mode-name {
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .server-input {
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Source Sans Pro', sans-serif;
+            font-size: 0.9rem;
+        }
+        
+        .server-input:focus {
+            outline: none;
+            border-color: var(--accent-current);
+        }
+        
+        .server-test-btn {
+            padding: 0.6rem 1rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .server-test-btn:hover {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+        }
+        
+        .server-status {
+            padding: 0.5rem;
+            border-radius: 6px;
+        }
+        
+        .server-status.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+        }
+        
+        .server-status.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+        
+        .server-status.loading {
+            color: var(--text-muted);
+        }
+
         /* Recordings List */
         .recordings-list {
             display: flex;
@@ -2262,6 +2356,8 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v38</strong> - Server locale per analisi video lunghi, qualità massima, UI configurazione server</p>
+                    <p><strong>v37</strong> - Fix analisi FpF, pulsante AI con testo</p>
                     <p><strong>v36</strong> - Fix video stabile, playback controls 2 righe visibili, menu fullscreen completo</p>
                     <p><strong>v35</strong> - Fix video stabile, menu dropdown fixed, playback 2 righe, controlli playback in fullscreen</p>
                     <p><strong>v34</strong> - Header hamburger a fianco titolo, fix deformazione video, fullscreen in playback</p>
@@ -2289,7 +2385,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 37 - Dicembre 2025</em>
+                    <em>Versione 38 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2868,6 +2964,32 @@
                             </button>
                         </div>
                     </div>
+                    
+                    <!-- Server Analisi -->
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+                        <label class="panel-title" style="display: block; margin-bottom: 0.5rem;">🖥️ Server Analisi</label>
+                        <div class="server-mode-selector">
+                            <button class="server-mode-btn active" data-mode="offline">
+                                <span class="mode-icon">📱</span>
+                                <span class="mode-name">Offline</span>
+                            </button>
+                            <button class="server-mode-btn" data-mode="local">
+                                <span class="mode-icon">🖥️</span>
+                                <span class="mode-name">Server</span>
+                            </button>
+                        </div>
+                        
+                        <div class="server-config" id="serverConfig" style="display: none; margin-top: 0.75rem;">
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <input type="text" class="server-input" id="serverIP" placeholder="192.168.1.100" style="flex: 1;">
+                                <span style="color: var(--text-muted);">:5000</span>
+                            </div>
+                            <button class="server-test-btn" id="serverTestBtn" style="margin-top: 0.5rem; width: 100%;">
+                                🔍 Test Connessione
+                            </button>
+                            <div class="server-status" id="serverStatus" style="margin-top: 0.5rem; font-size: 0.8rem; text-align: center;"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -2922,7 +3044,11 @@
             playbackSpeed: 0.5,
             fps: 0,
             frameCount: 0,
-            lastFpsTime: Date.now()
+            lastFpsTime: Date.now(),
+            // Server settings
+            serverMode: 'offline', // 'offline' o 'local'
+            serverIP: localStorage.getItem('serverIP') || '',
+            serverConnected: false
         };
 
         // DOM Elements
@@ -5335,6 +5461,131 @@
                 alert('Questa registrazione ha già lo scheletro nel video. L\'analisi aggiungerà comunque una nuova elaborazione.');
             }
             
+            // Se server locale attivo e connesso, usa quello
+            if (state.serverMode === 'local' && state.serverIP) {
+                await analyzeWithServer(currentRecording, analysisModel);
+                return;
+            }
+            
+            // Altrimenti usa analisi locale (browser)
+            await analyzeLocally(currentRecording, analysisModel);
+        }
+        
+        // Analisi tramite server locale
+        async function analyzeWithServer(currentRecording, analysisModel) {
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const video = elements.playbackVideo;
+            const wasPlaying = !video.paused;
+            
+            video.pause();
+            state.isAnalyzing = true;
+            analyzeBtn.classList.add('analyzing');
+            analyzeBtn.querySelector('.analyze-text').textContent = '📤';
+            
+            console.log('Analisi con server:', state.serverIP, 'modello:', analysisModel);
+            
+            try {
+                // Converti blob URL in blob
+                analyzeBtn.querySelector('.analyze-text').textContent = '📤';
+                
+                const response = await fetch(currentRecording.url);
+                const blob = await response.blob();
+                
+                // Prepara form data
+                const formData = new FormData();
+                formData.append('video', blob, 'video.webm');
+                formData.append('model', analysisModel === 'lightning' ? 'pose' : 'holistic');
+                formData.append('fps', '30');
+                formData.append('quality', analysisModel === 'holistic' ? '2' : '1'); // Qualità massima per holistic
+                
+                analyzeBtn.querySelector('.analyze-text').textContent = '⏳';
+                
+                // Invia al server
+                const serverResponse = await fetch(`http://${state.serverIP}:5000/api/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!serverResponse.ok) {
+                    throw new Error('Errore server: ' + serverResponse.status);
+                }
+                
+                const results = await serverResponse.json();
+                console.log('Risultati server:', results);
+                
+                // Converti risultati in formato app
+                const frameData = {};
+                for (const [frameNum, frameInfo] of Object.entries(results.frames)) {
+                    if (frameInfo.pose) {
+                        // Converti da formato server a formato app
+                        const keypoints = frameInfo.pose.map((lm, idx) => ({
+                            x: lm.px,
+                            y: lm.py,
+                            score: lm.visibility || 1,
+                            name: getPoseKeypointName(idx)
+                        }));
+                        
+                        frameData[frameNum] = {
+                            keypoints: keypoints,
+                            time: frameInfo.time,
+                            holisticData: {
+                                poseLandmarks: frameInfo.pose,
+                                leftHandLandmarks: frameInfo.left_hand,
+                                rightHandLandmarks: frameInfo.right_hand,
+                                faceLandmarks: frameInfo.face
+                            }
+                        };
+                    }
+                }
+                
+                // Crea elaborazione
+                const elaboration = createElaboration(currentRecording, analysisModel, frameData, {
+                    showGrid: state.showGrid,
+                    gridDensity: state.gridDensity,
+                    showAlignments: state.showAlignments
+                });
+                
+                state.analyzedFrames = frameData;
+                state.currentElaboration = elaboration;
+                
+                state.isAnalyzing = false;
+                analyzeBtn.classList.remove('analyzing');
+                analyzeBtn.classList.add('done');
+                
+                const modelLabels = { holistic: 'H', lightning: 'L', bodypix: 'B' };
+                analyzeBtn.querySelector('.analyze-text').textContent = modelLabels[analysisModel] || '✓';
+                elements.modeText.textContent = `Elab. ${modelLabels[analysisModel]}`;
+                
+                // Forza refresh
+                if (Object.keys(frameData).length > 0) {
+                    const frameNum = Math.floor(video.currentTime * 30);
+                    if (frameData[frameNum]) {
+                        const pose = { keypoints: frameData[frameNum].keypoints };
+                        state.currentPose = pose;
+                        updateAlignments(pose);
+                    }
+                }
+                
+                if (wasPlaying) video.play();
+                
+            } catch (error) {
+                console.error('Errore analisi server:', error);
+                state.isAnalyzing = false;
+                analyzeBtn.classList.remove('analyzing');
+                analyzeBtn.querySelector('.analyze-text').textContent = 'ERR';
+                
+                alert('Errore connessione al server.\nVerifica che il server sia attivo e riprova.\n\nErrore: ' + error.message);
+            }
+        }
+        
+        // Nome keypoint per indice
+        function getPoseKeypointName(idx) {
+            const names = ['nose', 'left_eye_inner', 'left_eye', 'left_eye_outer', 'right_eye_inner', 'right_eye', 'right_eye_outer', 'left_ear', 'right_ear', 'mouth_left', 'mouth_right', 'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow', 'left_wrist', 'right_wrist', 'left_pinky', 'right_pinky', 'left_index', 'right_index', 'left_thumb', 'right_thumb', 'left_hip', 'right_hip', 'left_knee', 'right_knee', 'left_ankle', 'right_ankle', 'left_heel', 'right_heel', 'left_foot_index', 'right_foot_index'];
+            return names[idx] || `point_${idx}`;
+        }
+        
+        // Analisi locale (nel browser)
+        async function analyzeLocally(currentRecording, analysisModel) {
             const analyzeBtn = document.getElementById('analyzeBtn');
             const video = elements.playbackVideo;
             const wasPlaying = !video.paused;
@@ -5344,7 +5595,7 @@
             analyzeBtn.classList.add('analyzing');
             analyzeBtn.querySelector('.analyze-text').textContent = '0%';
             
-            console.log('Avvio analisi con modello:', analysisModel);
+            console.log('Avvio analisi locale con modello:', analysisModel);
             
             // Crea detector temporaneo per l'analisi
             let tempDetector = null;
@@ -6636,6 +6887,75 @@
                     });
                 });
             });
+            
+            // Server mode buttons
+            document.querySelectorAll('.server-mode-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.server-mode-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    state.serverMode = btn.dataset.mode;
+                    
+                    const serverConfig = document.getElementById('serverConfig');
+                    if (state.serverMode === 'local') {
+                        serverConfig.style.display = 'block';
+                        // Carica IP salvato
+                        document.getElementById('serverIP').value = state.serverIP;
+                    } else {
+                        serverConfig.style.display = 'none';
+                    }
+                });
+            });
+            
+            // Server IP input
+            document.getElementById('serverIP').addEventListener('change', (e) => {
+                state.serverIP = e.target.value.trim();
+                localStorage.setItem('serverIP', state.serverIP);
+                state.serverConnected = false;
+                document.getElementById('serverStatus').textContent = '';
+                document.getElementById('serverStatus').className = 'server-status';
+            });
+            
+            // Server test button
+            document.getElementById('serverTestBtn').addEventListener('click', async () => {
+                const statusEl = document.getElementById('serverStatus');
+                const ip = document.getElementById('serverIP').value.trim();
+                
+                if (!ip) {
+                    statusEl.textContent = '⚠️ Inserisci un indirizzo IP';
+                    statusEl.className = 'server-status error';
+                    return;
+                }
+                
+                statusEl.textContent = '🔄 Connessione in corso...';
+                statusEl.className = 'server-status loading';
+                
+                try {
+                    const response = await fetch(`http://${ip}:5000/api/health`, {
+                        method: 'GET',
+                        timeout: 5000
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        state.serverConnected = true;
+                        state.serverIP = ip;
+                        localStorage.setItem('serverIP', ip);
+                        statusEl.textContent = `✅ Connesso! Server v${data.version}`;
+                        statusEl.className = 'server-status success';
+                    } else {
+                        throw new Error('Risposta non valida');
+                    }
+                } catch (error) {
+                    state.serverConnected = false;
+                    statusEl.textContent = '❌ Connessione fallita. Verifica IP e che il server sia attivo.';
+                    statusEl.className = 'server-status error';
+                }
+            });
+            
+            // Inizializza UI server se c'è IP salvato
+            if (state.serverIP) {
+                document.getElementById('serverIP').value = state.serverIP;
+            }
             
             // Header menu buttons
             document.getElementById('hdrSettingsBtn').addEventListener('click', () => {
