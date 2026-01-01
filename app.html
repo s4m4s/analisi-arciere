@@ -1462,6 +1462,31 @@
         .server-status.loading {
             color: var(--text-muted);
         }
+        
+        .server-open-btn {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            background: linear-gradient(135deg, var(--accent-current), #1d4ed8);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-family: 'Oswald', sans-serif;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .server-open-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+        }
+        
+        .server-open-btn:active {
+            transform: translateY(0);
+        }
 
         /* Recordings List */
         .recordings-list {
@@ -2356,7 +2381,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
-                    <p><strong>v38</strong> - Server locale per analisi video lunghi, qualità massima, UI configurazione server</p>
+                    <p><strong>v39</strong> - Server locale per analisi video lunghi, qualità massima, UI configurazione server</p>
                     <p><strong>v37</strong> - Fix analisi FpF, pulsante AI con testo</p>
                     <p><strong>v36</strong> - Fix video stabile, playback controls 2 righe visibili, menu fullscreen completo</p>
                     <p><strong>v35</strong> - Fix video stabile, menu dropdown fixed, playback 2 righe, controlli playback in fullscreen</p>
@@ -2385,7 +2410,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 38 - Dicembre 2025</em>
+                    <em>Versione 39 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2967,28 +2992,20 @@
                     
                     <!-- Server Analisi -->
                     <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <label class="panel-title" style="display: block; margin-bottom: 0.5rem;">🖥️ Server Analisi</label>
-                        <div class="server-mode-selector">
-                            <button class="server-mode-btn active" data-mode="offline">
-                                <span class="mode-icon">📱</span>
-                                <span class="mode-name">Offline</span>
-                            </button>
-                            <button class="server-mode-btn" data-mode="local">
-                                <span class="mode-icon">🖥️</span>
-                                <span class="mode-name">Server</span>
-                            </button>
+                        <label class="panel-title" style="display: block; margin-bottom: 0.75rem;">🖥️ Server Analisi FpF</label>
+                        
+                        <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
+                            <input type="text" class="server-input" id="serverIP" placeholder="192.168.1.100" style="flex: 1;">
+                            <span style="color: var(--text-muted);">:5000</span>
                         </div>
                         
-                        <div class="server-config" id="serverConfig" style="display: none; margin-top: 0.75rem;">
-                            <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                <input type="text" class="server-input" id="serverIP" placeholder="192.168.1.100" style="flex: 1;">
-                                <span style="color: var(--text-muted);">:5000</span>
-                            </div>
-                            <button class="server-test-btn" id="serverTestBtn" style="margin-top: 0.5rem; width: 100%;">
-                                🔍 Test Connessione
-                            </button>
-                            <div class="server-status" id="serverStatus" style="margin-top: 0.5rem; font-size: 0.8rem; text-align: center;"></div>
-                        </div>
+                        <button class="server-open-btn" id="serverOpenBtn">
+                            🚀 Apri App con Server
+                        </button>
+                        
+                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
+                            Per analisi video lunghi.<br>Richiede server attivo sul PC.
+                        </p>
                     </div>
                 </div>
             </div>
@@ -3045,10 +3062,10 @@
             fps: 0,
             frameCount: 0,
             lastFpsTime: Date.now(),
-            // Server settings
-            serverMode: 'offline', // 'offline' o 'local'
-            serverIP: localStorage.getItem('serverIP') || '',
-            serverConnected: false
+            // Server settings - rileva automaticamente se siamo sul server locale
+            serverMode: (window.location.port === '5000' || window.location.hostname.match(/^192\.168\./)) ? 'local' : 'offline',
+            serverIP: localStorage.getItem('serverIP') || window.location.hostname || '',
+            serverConnected: (window.location.port === '5000')
         };
 
         // DOM Elements
@@ -6888,68 +6905,28 @@
                 });
             });
             
-            // Server mode buttons
-            document.querySelectorAll('.server-mode-btn').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    document.querySelectorAll('.server-mode-btn').forEach(b => b.classList.remove('active'));
-                    btn.classList.add('active');
-                    state.serverMode = btn.dataset.mode;
-                    
-                    const serverConfig = document.getElementById('serverConfig');
-                    if (state.serverMode === 'local') {
-                        serverConfig.style.display = 'block';
-                        // Carica IP salvato
-                        document.getElementById('serverIP').value = state.serverIP;
-                    } else {
-                        serverConfig.style.display = 'none';
-                    }
-                });
-            });
-            
-            // Server IP input
+            // Server IP input - salva quando cambia
             document.getElementById('serverIP').addEventListener('change', (e) => {
                 state.serverIP = e.target.value.trim();
                 localStorage.setItem('serverIP', state.serverIP);
-                state.serverConnected = false;
-                document.getElementById('serverStatus').textContent = '';
-                document.getElementById('serverStatus').className = 'server-status';
             });
             
-            // Server test button
-            document.getElementById('serverTestBtn').addEventListener('click', async () => {
-                const statusEl = document.getElementById('serverStatus');
+            // Server Open Button - apre app dal server locale
+            document.getElementById('serverOpenBtn').addEventListener('click', () => {
                 const ip = document.getElementById('serverIP').value.trim();
                 
                 if (!ip) {
-                    statusEl.textContent = '⚠️ Inserisci un indirizzo IP';
-                    statusEl.className = 'server-status error';
+                    alert('Inserisci l\'indirizzo IP del server!\n\nLo trovi nella finestra del server sul PC.');
                     return;
                 }
                 
-                statusEl.textContent = '🔄 Connessione in corso...';
-                statusEl.className = 'server-status loading';
+                // Salva IP
+                state.serverIP = ip;
+                localStorage.setItem('serverIP', ip);
                 
-                try {
-                    const response = await fetch(`http://${ip}:5000/api/health`, {
-                        method: 'GET',
-                        timeout: 5000
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        state.serverConnected = true;
-                        state.serverIP = ip;
-                        localStorage.setItem('serverIP', ip);
-                        statusEl.textContent = `✅ Connesso! Server v${data.version}`;
-                        statusEl.className = 'server-status success';
-                    } else {
-                        throw new Error('Risposta non valida');
-                    }
-                } catch (error) {
-                    state.serverConnected = false;
-                    statusEl.textContent = '❌ Connessione fallita. Verifica IP e che il server sia attivo.';
-                    statusEl.className = 'server-status error';
-                }
+                // Apri app dal server
+                const serverUrl = `http://${ip}:5000/`;
+                window.location.href = serverUrl;
             });
             
             // Inizializza UI server se c'è IP salvato
