@@ -7024,7 +7024,8 @@
         });
         
         // ============ SERVICE WORKER ============
-        if ('serviceWorker' in navigator) {
+        // Non registrare SW su server locale (porta 5000)
+        if ('serviceWorker' in navigator && window.location.port !== '5000') {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
                     .then((registration) => {
