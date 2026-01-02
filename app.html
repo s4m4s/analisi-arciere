@@ -2584,6 +2584,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v42</strong> - Server HTTPS con certificato, archivio sicuro da app</p>
                     <p><strong>v41</strong> - Archivio Server: gestione atleti/video su PC, analisi FpF remota, upload video</p>
                     <p><strong>v39</strong> - Server locale per analisi video lunghi, qualità massima, UI configurazione server</p>
                     <p><strong>v37</strong> - Fix analisi FpF, pulsante AI con testo</p>
@@ -2614,7 +2615,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 41 - Dicembre 2025</em>
+                    <em>Versione 42 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -5769,7 +5770,7 @@
                 analyzeBtn.querySelector('.analyze-text').textContent = '⏳';
                 
                 // Invia al server
-                const serverResponse = await fetch(`http://${state.serverIP}:5000/api/analyze`, {
+                const serverResponse = await fetch(`https://${state.serverIP}:5000/api/analyze`, {
                     method: 'POST',
                     body: formData
                 });
@@ -7202,7 +7203,7 @@
                 if (!nome) return;
                 
                 try {
-                    const response = await fetch(`http://${state.serverIP}:5000/api/atleti`, {
+                    const response = await fetch(`https://${state.serverIP}:5000/api/atleti`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ nome })
@@ -7249,7 +7250,7 @@
                     const formData = new FormData();
                     formData.append('video', blob, 'video.webm');
                     
-                    const uploadResponse = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`, {
+                    const uploadResponse = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`, {
                         method: 'POST',
                         body: formData
                     });
@@ -7378,7 +7379,7 @@
             lista.innerHTML = '<div class="archivio-empty">Caricamento...</div>';
             
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti`);
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti`);
                 if (!response.ok) throw new Error('Errore server');
                 
                 const data = await response.json();
@@ -7434,7 +7435,7 @@
             lista.innerHTML = '<div class="archivio-empty">Caricamento...</div>';
             
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`);
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`);
                 if (!response.ok) throw new Error('Errore server');
                 
                 const data = await response.json();
@@ -7470,7 +7471,7 @@
             if (!confirm(`Eliminare l'atleta "${nome}" e tutti i suoi video?`)) return;
             
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(nome)}`, {
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(nome)}`, {
                     method: 'DELETE'
                 });
                 if (response.ok) {
@@ -7485,7 +7486,7 @@
             if (!confirm('Eliminare questo video?')) return;
             
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, {
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, {
                     method: 'DELETE'
                 });
                 if (response.ok) {
@@ -7497,7 +7498,7 @@
         }
         
         async function archivioScaricaVideo(atleta, videoId) {
-            window.open(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, '_blank');
+            window.open(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, '_blank');
         }
         
         async function archivioAnalizza(atleta, videoId) {
@@ -7506,7 +7507,7 @@
             btn.disabled = true;
             
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analizza`, {
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analizza`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -7532,7 +7533,7 @@
         
         async function archivioVediAnalisi(atleta, videoId) {
             try {
-                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analisi`);
+                const response = await fetch(`https://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analisi`);
                 if (!response.ok) throw new Error('Analisi non trovata');
                 
                 const analisi = await response.json();

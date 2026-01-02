@@ -2,13 +2,35 @@
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Analisi Arciere</title>
-    <script>
-        window.location.href = 'app.html';
-    </script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#1a1a2e">
+    <link rel="apple-touch-icon" href="logo-pol.png">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: system-ui, sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #fff; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; }
+        .container { text-align: center; max-width: 400px; }
+        .logo { width: 120px; height: 120px; margin-bottom: 20px; border-radius: 50%; }
+        h1 { font-size: 1.8rem; margin-bottom: 10px; }
+        p { color: #8892b0; margin-bottom: 30px; }
+        .btn { display: block; width: 100%; padding: 16px 24px; margin: 10px 0; background: #2563eb; color: #fff; text-decoration: none; border-radius: 12px; font-size: 1.1rem; font-weight: 600; transition: transform 0.2s, box-shadow 0.2s; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(37, 99, 235, 0.3); }
+        .version { margin-top: 40px; font-size: 0.85rem; color: #4a5568; }
+    </style>
 </head>
 <body>
-    <p>Caricamento...</p>
+    <div class="container">
+        <img src="logo-pol.png" alt="Logo" class="logo">
+        <h1>Analisi Arciere</h1>
+        <p>Polisportiva Gonone Dorgali<br>Tiro con l'Arco</p>
+        <a href="app.html" class="btn">🎯 Avvia App</a>
+        <div class="version">Versione 42</div>
+    </div>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+    </script>
 </body>
 </html>
