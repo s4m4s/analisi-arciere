@@ -504,6 +504,209 @@
             border-top: 1px solid var(--border-color);
         }
         
+        /* Archivio Styles */
+        .archivio-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .archivio-tab {
+            flex: 1;
+            padding: 0.85rem;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .archivio-tab:hover {
+            background: var(--bg-tertiary);
+        }
+        
+        .archivio-tab.active {
+            color: var(--accent-current);
+            border-bottom: 2px solid var(--accent-current);
+        }
+        
+        .archivio-content {
+            padding: 1rem;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        .archivio-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .archivio-input {
+            flex: 1;
+            padding: 0.6rem 0.8rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9rem;
+        }
+        
+        .archivio-btn-add {
+            padding: 0.6rem 1rem;
+            background: var(--accent-current);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: 'Oswald', sans-serif;
+            cursor: pointer;
+        }
+        
+        .archivio-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .archivio-empty {
+            text-align: center;
+            color: var(--text-muted);
+            padding: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .archivio-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .archivio-item:hover {
+            background: var(--bg-primary);
+        }
+        
+        .archivio-item-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.2rem;
+        }
+        
+        .archivio-item-name {
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .archivio-item-meta {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        
+        .archivio-item-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .archivio-item-btn {
+            padding: 0.4rem 0.6rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        
+        .archivio-item-btn:hover {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+        }
+        
+        .archivio-item-btn.danger:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+        }
+        
+        .archivio-header-back {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .archivio-btn-back {
+            padding: 0.4rem 0.8rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        
+        .archivio-actions {
+            padding: 1rem;
+            border-top: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+        }
+        
+        .archivio-selected-info {
+            margin-bottom: 0.75rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        
+        .archivio-action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        .archivio-btn {
+            padding: 0.6rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Oswald', sans-serif;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .archivio-btn:hover {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .archivio-btn.primary {
+            background: var(--accent-current);
+            border-color: var(--accent-current);
+            color: white;
+        }
+        
+        .archivio-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--success);
+            color: white;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            margin-left: 0.5rem;
+        }
+        
+        .archivio-badge.pending {
+            background: var(--warning);
+        }
+
         /* Settings Form */
         .settings-section {
             margin-bottom: 1.5rem;
@@ -2381,6 +2584,7 @@
                 <h3>📋 Changelog</h3>
                 
                 <div style="max-height: 200px; overflow-y: auto; font-size: 0.85rem;">
+                    <p><strong>v41</strong> - Archivio Server: gestione atleti/video su PC, analisi FpF remota, upload video</p>
                     <p><strong>v39</strong> - Server locale per analisi video lunghi, qualità massima, UI configurazione server</p>
                     <p><strong>v37</strong> - Fix analisi FpF, pulsante AI con testo</p>
                     <p><strong>v36</strong> - Fix video stabile, playback controls 2 righe visibili, menu fullscreen completo</p>
@@ -2410,7 +2614,7 @@
                 </div>
                 
                 <p style="text-align: center; margin-top: 2rem; color: var(--text-muted);">
-                    <em>Versione 39 - Dicembre 2025</em>
+                    <em>Versione 41 - Dicembre 2025</em>
                 </p>
             </div>
         </div>
@@ -2555,6 +2759,55 @@
                             <span class="version-desc">Holistic, BodyPix, pulsante griglia</span>
                         </span>
                     </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Archivio Server Modal -->
+    <div class="modal-overlay" id="archivioModal">
+        <div class="modal" style="max-width: 600px; max-height: 85vh;">
+            <div class="modal-header">
+                <span class="modal-title">📁 Archivio Server</span>
+                <button class="modal-close" id="archivioModalClose">✕</button>
+            </div>
+            <div class="modal-body" style="padding: 0;">
+                <!-- Tabs -->
+                <div class="archivio-tabs">
+                    <button class="archivio-tab active" data-tab="atleti">👥 Atleti</button>
+                    <button class="archivio-tab" data-tab="video">🎬 Video</button>
+                </div>
+                
+                <!-- Tab Atleti -->
+                <div class="archivio-content" id="tabAtleti">
+                    <div class="archivio-toolbar">
+                        <input type="text" id="nuovoAtletaNome" placeholder="Nome nuovo atleta..." class="archivio-input">
+                        <button class="archivio-btn-add" id="btnAggiungiAtleta">+ Aggiungi</button>
+                    </div>
+                    <div class="archivio-list" id="listaAtleti">
+                        <div class="archivio-empty">Connetti al server per vedere gli atleti</div>
+                    </div>
+                </div>
+                
+                <!-- Tab Video -->
+                <div class="archivio-content" id="tabVideo" style="display: none;">
+                    <div class="archivio-header-back">
+                        <button class="archivio-btn-back" id="btnTornaAtleti">← Atleti</button>
+                        <span id="nomeAtletaCorrente">-</span>
+                    </div>
+                    <div class="archivio-list" id="listaVideo">
+                        <div class="archivio-empty">Seleziona un atleta</div>
+                    </div>
+                </div>
+                
+                <!-- Azioni per video selezionato dalla lista locale -->
+                <div class="archivio-actions" id="archivioActions" style="display: none;">
+                    <div class="archivio-selected-info">
+                        <span id="selectedVideoInfo">Nessun video selezionato</span>
+                    </div>
+                    <div class="archivio-action-buttons">
+                        <button class="archivio-btn" id="btnInviaVideo">📤 Invia al Server</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2990,22 +3243,20 @@
                         </div>
                     </div>
                     
-                    <!-- Server Analisi -->
+                    <!-- Server Archivio -->
                     <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color);">
-                        <label class="panel-title" style="display: block; margin-bottom: 0.75rem;">🖥️ Server Analisi FpF</label>
+                        <label class="panel-title" style="display: block; margin-bottom: 0.75rem;">🖥️ Server Archivio</label>
                         
                         <div style="display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.75rem;">
                             <input type="text" class="server-input" id="serverIP" placeholder="192.168.1.100" style="flex: 1;">
                             <span style="color: var(--text-muted);">:5000</span>
                         </div>
                         
-                        <button class="server-open-btn" id="serverOpenBtn">
-                            🚀 Apri App con Server
+                        <button class="server-open-btn" id="serverArchiveBtn">
+                            📁 Apri Archivio
                         </button>
                         
-                        <p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.5rem; text-align: center;">
-                            Per analisi video lunghi.<br>Richiede server attivo sul PC.
-                        </p>
+                        <div id="serverStatus" style="font-size: 0.75rem; text-align: center; margin-top: 0.5rem;"></div>
                     </div>
                 </div>
             </div>
@@ -6911,8 +7162,8 @@
                 localStorage.setItem('serverIP', state.serverIP);
             });
             
-            // Server Open Button - apre app dal server locale
-            document.getElementById('serverOpenBtn').addEventListener('click', () => {
+            // Server Archive Button - apre modal archivio
+            document.getElementById('serverArchiveBtn').addEventListener('click', async () => {
                 const ip = document.getElementById('serverIP').value.trim();
                 
                 if (!ip) {
@@ -6920,13 +7171,107 @@
                     return;
                 }
                 
-                // Salva IP
                 state.serverIP = ip;
                 localStorage.setItem('serverIP', ip);
                 
-                // Apri app dal server
-                const serverUrl = `http://${ip}:5000/`;
-                window.location.href = serverUrl;
+                // Apri modal e carica atleti
+                document.getElementById('archivioModal').classList.add('open');
+                await archivioCaricaAtleti();
+            });
+            
+            // Archivio modal close
+            document.getElementById('archivioModalClose').addEventListener('click', () => {
+                document.getElementById('archivioModal').classList.remove('open');
+            });
+            
+            // Archivio tabs
+            document.querySelectorAll('.archivio-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.archivio-tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    const tabName = tab.dataset.tab;
+                    document.getElementById('tabAtleti').style.display = tabName === 'atleti' ? 'block' : 'none';
+                    document.getElementById('tabVideo').style.display = tabName === 'video' ? 'block' : 'none';
+                });
+            });
+            
+            // Aggiungi atleta
+            document.getElementById('btnAggiungiAtleta').addEventListener('click', async () => {
+                const nome = document.getElementById('nuovoAtletaNome').value.trim();
+                if (!nome) return;
+                
+                try {
+                    const response = await fetch(`http://${state.serverIP}:5000/api/atleti`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ nome })
+                    });
+                    
+                    if (response.ok) {
+                        document.getElementById('nuovoAtletaNome').value = '';
+                        await archivioCaricaAtleti();
+                    } else {
+                        const err = await response.json();
+                        alert(err.error || 'Errore');
+                    }
+                } catch (e) {
+                    alert('Errore connessione server');
+                }
+            });
+            
+            // Torna ad atleti
+            document.getElementById('btnTornaAtleti').addEventListener('click', () => {
+                document.querySelector('.archivio-tab[data-tab="atleti"]').click();
+            });
+            
+            // Invia video al server
+            document.getElementById('btnInviaVideo').addEventListener('click', async () => {
+                if (!state.currentRecording) {
+                    alert('Seleziona prima un video dalla lista registrazioni');
+                    return;
+                }
+                
+                const atleta = state.currentAthlete || document.getElementById('athleteName').value.trim();
+                if (!atleta) {
+                    alert('Inserisci il nome dell\'atleta');
+                    return;
+                }
+                
+                try {
+                    document.getElementById('btnInviaVideo').textContent = '📤 Invio...';
+                    
+                    // Fetch blob from URL
+                    const response = await fetch(state.currentRecording.url);
+                    const blob = await response.blob();
+                    
+                    // Upload
+                    const formData = new FormData();
+                    formData.append('video', blob, 'video.webm');
+                    
+                    const uploadResponse = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (uploadResponse.ok) {
+                        const result = await uploadResponse.json();
+                        document.getElementById('btnInviaVideo').textContent = '✅ Inviato!';
+                        setTimeout(() => {
+                            document.getElementById('btnInviaVideo').textContent = '📤 Invia al Server';
+                        }, 2000);
+                        
+                        // Aggiorna lista se siamo nel tab video
+                        if (state.archivioAtletaCorrente === atleta) {
+                            await archivioCaricaVideo(atleta);
+                        }
+                    } else {
+                        throw new Error('Upload fallito');
+                    }
+                } catch (e) {
+                    alert('Errore invio: ' + e.message);
+                    document.getElementById('btnInviaVideo').textContent = '📤 Invia al Server';
+                }
             });
             
             // Inizializza UI server se c'è IP salvato
@@ -7022,6 +7367,182 @@
             deferredPrompt = null;
             console.log('PWA installed');
         });
+        
+        // ============ ARCHIVIO SERVER ============
+        
+        // Variabile per atleta corrente nell'archivio
+        state.archivioAtletaCorrente = null;
+        
+        async function archivioCaricaAtleti() {
+            const lista = document.getElementById('listaAtleti');
+            lista.innerHTML = '<div class="archivio-empty">Caricamento...</div>';
+            
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti`);
+                if (!response.ok) throw new Error('Errore server');
+                
+                const data = await response.json();
+                
+                if (data.atleti.length === 0) {
+                    lista.innerHTML = '<div class="archivio-empty">Nessun atleta. Aggiungine uno!</div>';
+                    return;
+                }
+                
+                lista.innerHTML = data.atleti.map(a => `
+                    <div class="archivio-item" data-atleta="${a.nome}">
+                        <div class="archivio-item-info">
+                            <span class="archivio-item-name">👤 ${a.nome}</span>
+                            <span class="archivio-item-meta">${a.video_count} video</span>
+                        </div>
+                        <div class="archivio-item-actions">
+                            <button class="archivio-item-btn" onclick="event.stopPropagation(); archivioApriVideo('${a.nome}')">📁 Video</button>
+                            <button class="archivio-item-btn danger" onclick="event.stopPropagation(); archivioEliminaAtleta('${a.nome}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Click su atleta apre video
+                lista.querySelectorAll('.archivio-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        archivioApriVideo(item.dataset.atleta);
+                    });
+                });
+                
+                document.getElementById('serverStatus').innerHTML = '<span style="color: var(--success);">✓ Connesso</span>';
+                
+            } catch (e) {
+                lista.innerHTML = '<div class="archivio-empty">❌ Errore connessione server</div>';
+                document.getElementById('serverStatus').innerHTML = '<span style="color: var(--danger);">✗ Non connesso</span>';
+            }
+        }
+        
+        async function archivioApriVideo(atleta) {
+            state.archivioAtletaCorrente = atleta;
+            document.getElementById('nomeAtletaCorrente').textContent = atleta;
+            
+            // Switch to video tab
+            document.querySelectorAll('.archivio-tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.archivio-tab[data-tab="video"]').classList.add('active');
+            document.getElementById('tabAtleti').style.display = 'none';
+            document.getElementById('tabVideo').style.display = 'block';
+            
+            await archivioCaricaVideo(atleta);
+        }
+        
+        async function archivioCaricaVideo(atleta) {
+            const lista = document.getElementById('listaVideo');
+            lista.innerHTML = '<div class="archivio-empty">Caricamento...</div>';
+            
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video`);
+                if (!response.ok) throw new Error('Errore server');
+                
+                const data = await response.json();
+                
+                if (data.video.length === 0) {
+                    lista.innerHTML = '<div class="archivio-empty">Nessun video per questo atleta</div>';
+                    return;
+                }
+                
+                lista.innerHTML = data.video.map(v => `
+                    <div class="archivio-item" data-video-id="${v.id}">
+                        <div class="archivio-item-info">
+                            <span class="archivio-item-name">🎬 ${v.id}</span>
+                            <span class="archivio-item-meta">
+                                ${(v.size / 1024 / 1024).toFixed(1)} MB
+                                ${v.has_analisi ? '<span class="archivio-badge">Analizzato</span>' : ''}
+                            </span>
+                        </div>
+                        <div class="archivio-item-actions">
+                            <button class="archivio-item-btn" onclick="event.stopPropagation(); archivioScaricaVideo('${atleta}', '${v.id}')">⬇️</button>
+                            ${!v.has_analisi ? `<button class="archivio-item-btn" onclick="event.stopPropagation(); archivioAnalizza('${atleta}', '${v.id}')">🔬 FpF</button>` : `<button class="archivio-item-btn" onclick="event.stopPropagation(); archivioVediAnalisi('${atleta}', '${v.id}')">📊</button>`}
+                            <button class="archivio-item-btn danger" onclick="event.stopPropagation(); archivioEliminaVideo('${atleta}', '${v.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (e) {
+                lista.innerHTML = '<div class="archivio-empty">❌ Errore caricamento video</div>';
+            }
+        }
+        
+        async function archivioEliminaAtleta(nome) {
+            if (!confirm(`Eliminare l'atleta "${nome}" e tutti i suoi video?`)) return;
+            
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(nome)}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    await archivioCaricaAtleti();
+                }
+            } catch (e) {
+                alert('Errore eliminazione');
+            }
+        }
+        
+        async function archivioEliminaVideo(atleta, videoId) {
+            if (!confirm('Eliminare questo video?')) return;
+            
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    await archivioCaricaVideo(atleta);
+                }
+            } catch (e) {
+                alert('Errore eliminazione');
+            }
+        }
+        
+        async function archivioScaricaVideo(atleta, videoId) {
+            window.open(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}`, '_blank');
+        }
+        
+        async function archivioAnalizza(atleta, videoId) {
+            const btn = event.target;
+            btn.textContent = '⏳';
+            btn.disabled = true;
+            
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analizza`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        model: state.modelType || 'holistic',
+                        quality: 2,
+                        fps: 30
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`Analisi completata!\n${result.frames_analyzed} frame in ${result.analysis_time.toFixed(1)}s`);
+                    await archivioCaricaVideo(atleta);
+                } else {
+                    throw new Error('Errore analisi');
+                }
+            } catch (e) {
+                alert('Errore durante l\'analisi: ' + e.message);
+                btn.textContent = '🔬 FpF';
+                btn.disabled = false;
+            }
+        }
+        
+        async function archivioVediAnalisi(atleta, videoId) {
+            try {
+                const response = await fetch(`http://${state.serverIP}:5000/api/atleti/${encodeURIComponent(atleta)}/video/${videoId}/analisi`);
+                if (!response.ok) throw new Error('Analisi non trovata');
+                
+                const analisi = await response.json();
+                alert(`Analisi: ${analisi.frames_analyzed} frame\nModello: ${analisi.model}\nDurata analisi: ${analisi.analysis_time.toFixed(1)}s`);
+                
+                // TODO: in futuro potremo visualizzare l'analisi sul video
+            } catch (e) {
+                alert('Errore caricamento analisi');
+            }
+        }
         
         // ============ SERVICE WORKER ============
         // Non registrare SW su server locale (porta 5000)
